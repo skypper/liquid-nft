@@ -30,7 +30,7 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
         _;
     }
 
-    function initializeCollection(address collection, uint256[] calldata tokenIds, address[] calldata receivers) external nonReentrant {
+    function initializeCollection(string calldata name, string calldata symbol, address collection, uint256[] calldata tokenIds, address[] calldata receivers) external nonReentrant {
         require(!collectionInitialized[collection], CollectionNotExists());
         
         require(tokenIds.length > BOOTSTRAP_NFTS, NotEnoughNFTs());
@@ -45,7 +45,7 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
         }
 
         collectionInitialized[collection] = true;
-        CollectionToken collectionToken = new CollectionToken("", "", address(this));
+        CollectionToken collectionToken = new CollectionToken(name, symbol, address(this));
         collectionTokens[collection] = address(collectionToken);
 
         collectionToken.mint(msg.sender, tokenIdsCount * 1 ether);
