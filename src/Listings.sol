@@ -19,25 +19,27 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
     error NotEnoughNFTs();
     error InvalidReceivers();
 
+    event CollectionCreated(address collection, uint256[] tokenId, address[] receivers);
+
     uint256 constant BOOTSTRAP_NFTS = 3;
 
     mapping(address collection => mapping(uint256 tokenId => Listing)) listings;
-    mapping(address collection => bool) collectionInitialized;
+    mapping(address collection => bool) collectionCreated;
     mapping(address collection => address collectionToken) collectionTokens;
 
     modifier collectionExists(address collection) {
-        require(collectionInitialized[collection], CollectionNotExists());
+        require(collectionCreated[collection], CollectionNotExists());
         _;
     }
 
-    function initializeCollection(
+    function createCollection(
         string calldata name,
         string calldata symbol,
         address collection,
         uint256[] calldata tokenIds,
         address[] calldata receivers
     ) external nonReentrant {
-        require(!collectionInitialized[collection], CollectionNotExists());
+        require(!collectionCreated[collection], CollectionNotExists());
 
         require(tokenIds.length > BOOTSTRAP_NFTS, NotEnoughNFTs());
         require(tokenIds.length == receivers.length, InvalidReceivers());
@@ -58,7 +60,7 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
             listings[collection][tokenIds[i]] = listing;
         }
 
-        collectionInitialized[collection] = true;
+        collectionCreated[collection] = true;
         CollectionToken collectionToken = new CollectionToken(
             name,
             symbol,
@@ -67,6 +69,8 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
         collectionTokens[collection] = address(collectionToken);
 
         collectionToken.mint(msg.sender, tokenIdsCount * 1 ether);
+
+        emit CollectionCreated(collection, tokenIds, receivers);
     }
 
     function createListing(
