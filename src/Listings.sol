@@ -30,32 +30,56 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
         _;
     }
 
-    function initializeCollection(string calldata name, string calldata symbol, address collection, uint256[] calldata tokenIds, address[] calldata receivers) external nonReentrant {
+    function initializeCollection(
+        string calldata name,
+        string calldata symbol,
+        address collection,
+        uint256[] calldata tokenIds,
+        address[] calldata receivers
+    ) external nonReentrant {
         require(!collectionInitialized[collection], CollectionNotExists());
-        
+
         require(tokenIds.length > BOOTSTRAP_NFTS, NotEnoughNFTs());
         require(tokenIds.length == receivers.length, InvalidReceivers());
 
         uint256 tokenIdsCount = tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
-            IERC721(collection).safeTransferFrom(msg.sender, address(this), tokenIds[i]);
+            IERC721(collection).safeTransferFrom(
+                msg.sender,
+                address(this),
+                tokenIds[i]
+            );
 
-            Listing memory listing = Listing(collection, tokenIds[i], receivers[i]);
+            Listing memory listing = Listing(
+                collection,
+                tokenIds[i],
+                receivers[i]
+            );
             listings[collection][tokenIds[i]] = listing;
         }
 
         collectionInitialized[collection] = true;
-        CollectionToken collectionToken = new CollectionToken(name, symbol, address(this));
+        CollectionToken collectionToken = new CollectionToken(
+            name,
+            symbol,
+            address(this)
+        );
         collectionTokens[collection] = address(collectionToken);
 
         collectionToken.mint(msg.sender, tokenIdsCount * 1 ether);
     }
 
-    function createListing(address collection, address tokenId) external nonReentrant collectionExists(collection) {
+    function createListing(
+        address collection,
+        address tokenId
+    ) external nonReentrant collectionExists(collection) {
         revert NotImplemented();
     }
 
-    function cancelListing(address collection, address tokenId) external nonReentrant collectionExists(collection) {
+    function cancelListing(
+        address collection,
+        address tokenId
+    ) external nonReentrant collectionExists(collection) {
         revert NotImplemented();
     }
 
