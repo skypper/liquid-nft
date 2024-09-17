@@ -75,16 +75,31 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
 
     function createListing(
         address collection,
-        address tokenId
+        uint256 tokenId,
+        address receiver
     ) external nonReentrant collectionExists(collection) {
-        revert NotImplemented();
+        IERC721(collection).safeTransferFrom(
+            msg.sender,
+            address(this),
+            tokenId
+        );
+
+        Listing memory listing = Listing(collection, tokenId, receiver);
+        listings[collection][tokenId] = listing;
+
+        address collectionToken = collectionTokens[collection];
+        CollectionToken(collectionToken).mint(receiver, 1 ether);
     }
 
     function cancelListing(
         address collection,
-        address tokenId
+        uint256 tokenId,
+        address receiver
     ) external nonReentrant collectionExists(collection) {
-        revert NotImplemented();
+        address collectionToken = collectionTokens[collection];
+        CollectionToken(collectionToken).burn(msg.sender, 1 ether);
+
+        IERC721(collection).safeTransferFrom(address(this), receiver, tokenId);
     }
 
     function onERC721Received(
