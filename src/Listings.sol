@@ -9,8 +9,6 @@ import {CollectionToken} from "./CollectionToken.sol";
 
 contract Listings is ReentrancyGuard, IERC721Receiver {
     struct Listing {
-        address collection;
-        uint256 tokenId;
         address owner;
     }
 
@@ -53,8 +51,6 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
             );
 
             Listing memory listing = Listing(
-                collection,
-                tokenIds[i],
                 receivers[i]
             );
             listings[collection][tokenIds[i]] = listing;
@@ -84,7 +80,7 @@ contract Listings is ReentrancyGuard, IERC721Receiver {
             tokenId
         );
 
-        Listing memory listing = Listing(collection, tokenId, receiver);
+        Listing memory listing = Listing(collection);
         listings[collection][tokenId] = listing;
 
         address collectionToken = collectionTokens[collection];
