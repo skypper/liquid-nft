@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Listings} from "../src/Listings.sol";
+import {IListings} from "../src/interfaces/IListings.sol";
 
 import {ERC721Mock} from "./mocks/ERC721Mock.sol";
 
@@ -26,17 +27,16 @@ contract ListingsTest is Test {
     function test_createCollection(uint256 tokenId) public {
         vm.assume(tokenId != 0 && tokenId < type(uint256).max - 4);
         uint256[] memory tokenIds = new uint256[](4);
-        address[] memory receivers = new address[](4);
+        IListings.Listing memory listing = IListings.Listing(address(this));
         for (uint256 i; i < 4; ++i) {
             tokenIds[i] = tokenId + i;
-            receivers[i] = address(this);
 
             nft1.mint(address(this), tokenId + i);
         }
 
         nft1.setApprovalForAll(address(listings), true);
         
-        listings.createCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, receivers);
+        listings.createCollection(IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing));
     }
 
     function test_createCollectionNotEnoughNFTs(uint256 tokenId) public {
@@ -48,10 +48,9 @@ contract ListingsTest is Test {
 
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = tokenId;
-        address[] memory receivers = new address[](1);
-        receivers[0] = address(this);
+        IListings.Listing memory listing = IListings.Listing(address(this));
         
         vm.expectRevert();
-        listings.createCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, receivers);
+        listings.createCollection(IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing));
     }
 }

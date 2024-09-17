@@ -12,7 +12,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     event CollectionCreated(
         address collection,
         uint256[] tokenId,
-        address[] receivers
+        Listing listing
     );
 
     uint256 constant BOOTSTRAP_NFTS = 3;
@@ -26,41 +26,34 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         _;
     }
 
-    function createCollection(
-        string calldata name,
-        string calldata symbol,
-        address collection,
-        uint256[] calldata tokenIds,
-        address[] calldata receivers
-    ) external nonReentrant {
-        require(!collectionCreated[collection], CollectionNotExists());
+    function createCollection(CreateCollection calldata _createCollection) external nonReentrant {
+        require(!collectionCreated[_createCollection.collection], CollectionNotExists());
 
-        require(tokenIds.length > BOOTSTRAP_NFTS, NotEnoughNFTs());
-        require(tokenIds.length == receivers.length, InvalidReceivers());
+        require(_createCollection.tokenIds.length > BOOTSTRAP_NFTS, NotEnoughNFTs());
 
-        uint256 tokenIdsCount = tokenIds.length;
+        uint256 tokenIdsCount = _createCollection.tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
-            IERC721(collection).safeTransferFrom(
+            IERC721(_createCollection.collection).safeTransferFrom(
                 msg.sender,
                 address(this),
-                tokenIds[i]
+                _createCollection.tokenIds[i]
             );
 
-            Listing memory listing = Listing(receivers[i]);
-            listings[collection][tokenIds[i]] = listing;
+            Listing memory listing = Listing(_createCollection.listing.owner);
+            listings[_createCollection.collection][_createCollection.tokenIds[i]] = listing;
         }
 
-        collectionCreated[collection] = true;
+        collectionCreated[_createCollection.collection] = true;
         CollectionToken collectionToken = new CollectionToken(
-            name,
-            symbol,
+            _createCollection.name,
+            _createCollection.symbol,
             address(this)
         );
-        collectionTokens[collection] = address(collectionToken);
+        collectionTokens[_createCollection.collection] = address(collectionToken);
 
         collectionToken.mint(msg.sender, tokenIdsCount * 1 ether);
 
-        emit CollectionCreated(collection, tokenIds, receivers);
+        emit CollectionCreated(_createCollection.collection, _createCollection.tokenIds, _createCollection.listing);
     }
 
     function createListing(
