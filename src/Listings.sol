@@ -26,10 +26,18 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         _;
     }
 
-    function createCollection(CreateCollection calldata _createCollection) external nonReentrant {
-        require(!collectionCreated[_createCollection.collection], CollectionNotExists());
+    function createCollection(
+        CreateCollection calldata _createCollection
+    ) external nonReentrant {
+        require(
+            !collectionCreated[_createCollection.collection],
+            CollectionNotExists()
+        );
 
-        require(_createCollection.tokenIds.length > BOOTSTRAP_NFTS, NotEnoughNFTs());
+        require(
+            _createCollection.tokenIds.length > BOOTSTRAP_NFTS,
+            NotEnoughNFTs()
+        );
 
         uint256 tokenIdsCount = _createCollection.tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
@@ -40,7 +48,9 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
             );
 
             Listing memory listing = Listing(_createCollection.listing.owner);
-            listings[_createCollection.collection][_createCollection.tokenIds[i]] = listing;
+            listings[_createCollection.collection][
+                _createCollection.tokenIds[i]
+            ] = listing;
         }
 
         collectionCreated[_createCollection.collection] = true;
@@ -49,40 +59,46 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
             _createCollection.symbol,
             address(this)
         );
-        collectionTokens[_createCollection.collection] = address(collectionToken);
+        collectionTokens[_createCollection.collection] = address(
+            collectionToken
+        );
 
         collectionToken.mint(msg.sender, tokenIdsCount * 1 ether);
 
-        emit CollectionCreated(_createCollection.collection, _createCollection.tokenIds, _createCollection.listing);
+        emit CollectionCreated(
+            _createCollection.collection,
+            _createCollection.tokenIds,
+            _createCollection.listing
+        );
     }
 
     function createListing(
-        address collection,
-        uint256 tokenId,
-        address receiver
-    ) external nonReentrant collectionExists(collection) {
-        IERC721(collection).safeTransferFrom(
+        CreateListing calldata _createListing
+    ) external nonReentrant collectionExists(_createListing.collection) {
+        IERC721(_createListing.collection).safeTransferFrom(
             msg.sender,
             address(this),
-            tokenId
+            _createListing.tokenId
         );
 
-        Listing memory listing = Listing(collection);
-        listings[collection][tokenId] = listing;
+        Listing memory listing = Listing(_createListing.collection);
+        listings[_createListing.collection][_createListing.tokenId] = listing;
 
-        address collectionToken = collectionTokens[collection];
-        CollectionToken(collectionToken).mint(receiver, 1 ether);
+        address collectionToken = collectionTokens[_createListing.collection];
+        CollectionToken(collectionToken).mint(_createListing.receiver, 1 ether);
     }
 
     function cancelListing(
-        address collection,
-        uint256 tokenId,
-        address receiver
-    ) external nonReentrant collectionExists(collection) {
-        address collectionToken = collectionTokens[collection];
+        CancelListing calldata _cancelListing
+    ) external nonReentrant collectionExists(_cancelListing.collection) {
+        address collectionToken = collectionTokens[_cancelListing.collection];
         CollectionToken(collectionToken).burn(msg.sender, 1 ether);
 
-        IERC721(collection).safeTransferFrom(address(this), receiver, tokenId);
+        IERC721(_cancelListing.collection).safeTransferFrom(
+            address(this),
+            _cancelListing.receiver,
+            _cancelListing.tokenId
+        );
     }
 
     function onERC721Received(

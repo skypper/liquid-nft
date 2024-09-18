@@ -15,24 +15,30 @@ interface IListings {
         uint256[] tokenIds;
         Listing listing;
     }
+    struct CreateListing {
+        address collection;
+        uint256 tokenId;
+        address receiver;
+    }
+    struct CancelListing {
+        address collection;
+        uint256 tokenId;
+        address receiver;
+    }
 
     error NotImplemented();
     error CollectionNotExists();
     error NotEnoughNFTs();
 
     function createCollection(
-        CreateCollection calldata createCollection
+        CreateCollection calldata _createCollection
     ) external;
 
     function createListing(
-        address collection,
-        uint256 tokenId,
-        address receiver
+        CreateListing calldata _createListing
     ) external;
 
     function cancelListing(
-        address collection,
-        uint256 tokenId,
-        address receiver
+        CancelListing calldata _cancelListing
     ) external;
 }
