@@ -109,6 +109,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     function cancelListing(
         CancelListing calldata _cancelListing
     ) external nonReentrant collectionExists(_cancelListing.collection) {
+        require(msg.sender == listings[_cancelListing.collection][_cancelListing.tokenId].owner, Unauthorized());
+
         address collectionToken = collectionTokens[_cancelListing.collection];
         CollectionToken(collectionToken).burn(msg.sender, 1 ether);
 
