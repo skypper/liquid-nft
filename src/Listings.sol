@@ -110,6 +110,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
             _cancelListing.receiver,
             _cancelListing.tokenId
         );
+        delete listings[_cancelListing.collection][_cancelListing.tokenId];
     }
 
     function onERC721Received(
