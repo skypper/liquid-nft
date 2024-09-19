@@ -122,6 +122,29 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         delete listings[_cancelListing.collection][_cancelListing.tokenId];
     }
 
+    function fillListing(FillListing calldata _fillListing) external nonReentrant collectionExists(_fillListing.collection) {
+        Listing memory listing = listings[_fillListing.collection][_fillListing.tokenId];
+        (bool isAvailable, uint256 price) = _resolveFee(listing);
+        require(isAvailable, ListingExpired());
+
+        address collectionToken = collectionTokens[_fillListing.collection];
+
+        uint256 ownerOwed = price - 1 ether;
+        // burn the floor price (immediately provided to the listing's owner)
+        CollectionToken(collectionToken).burn(msg.sender, 1 ether);
+        // transfer the difference upwards from the floor price to the listing's owner
+        CollectionToken(collectionToken).transferFrom(msg.sender, listing.owner, ownerOwed);
+        // transfer collection NFT to the filler
+        IERC721(_fillListing.collection).transferFrom(address(this), msg.sender, _fillListing.tokenId);
+    }
+
+    function _resolveFee(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {
+        if (listing.created + listing.duration < block.timestamp) {
+            return (false, 0);
+        }
+        price = listing.floorMultiple * 1 ether / FLOOR_MULTIPLE_PRECISION;
+    }
+
     function onERC721Received(
         address,
         address,

@@ -25,6 +25,10 @@ interface IListings {
         uint256 tokenId;
         address receiver;
     }
+    struct FillListing {
+        address collection;
+        uint256 tokenId;
+    }
 
     error NotImplemented();
     error CollectionNotExists();
@@ -32,6 +36,7 @@ interface IListings {
     error FloorMultipleTooLow();
     error ListingExists();
     error Unauthorized();
+    error ListingExpired();
 
     function createCollection(
         CreateCollection calldata _createCollection
@@ -43,5 +48,9 @@ interface IListings {
 
     function cancelListing(
         CancelListing calldata _cancelListing
+    ) external;
+    
+    function fillListing(
+        FillListing calldata _fillListing
     ) external;
 }
