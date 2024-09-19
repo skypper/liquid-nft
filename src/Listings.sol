@@ -27,7 +27,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         _;
     }
 
-    function createCollection(CreateCollection calldata _createCollection) external nonReentrant {
+    function createCollection(CreateCollection calldata _createCollection) external override nonReentrant {
         require(!collectionCreated[_createCollection.collection], CollectionNotExists());
 
         require(_createCollection.tokenIds.length >= BOOTSTRAP_NFTS, NotEnoughNFTs());
@@ -63,6 +63,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
 
     function createListing(CreateListing calldata _createListing)
         external
+        override
         nonReentrant
         collectionExists(_createListing.collection)
     {
@@ -95,6 +96,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
 
     function cancelListing(CancelListing calldata _cancelListing)
         external
+        override
         nonReentrant
         collectionExists(_cancelListing.collection)
     {
@@ -111,6 +113,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
 
     function fillListing(FillListing calldata _fillListing)
         external
+        override
         nonReentrant
         collectionExists(_fillListing.collection)
     {
