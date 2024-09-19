@@ -43,6 +43,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         uint256 tokenIdsCount = _createCollection.tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
             Listing memory listing_ = _createCollection.listing;
+            require(listing_.floorMultiple >= FLOOR_MULTIPLE_PRECISION, FloorMultipleTooLow());
 
             IERC721(_createCollection.collection).safeTransferFrom(
                 msg.sender,
@@ -84,6 +85,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         CreateListing calldata _createListing
     ) external nonReentrant collectionExists(_createListing.collection) {
         Listing memory listing_ = _createListing.listing;
+        require(listing_.floorMultiple >= FLOOR_MULTIPLE_PRECISION, FloorMultipleTooLow());
 
         IERC721(_createListing.collection).safeTransferFrom(
             msg.sender,
