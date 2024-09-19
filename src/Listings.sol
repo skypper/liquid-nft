@@ -15,7 +15,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         Listing listing
     );
 
-    uint256 constant BOOTSTRAP_NFTS = 3;
+    uint256 public constant BOOTSTRAP_NFTS = 3;
+    uint256 public constant FLOOR_MULTIPLE_PRECISION = 100;
 
     mapping(address collection => mapping(uint256 tokenId => Listing)) listings;
     mapping(address collection => bool) collectionCreated;
@@ -47,7 +48,12 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
                 _createCollection.tokenIds[i]
             );
 
-            Listing memory listing = Listing(_createCollection.listing.owner);
+            Listing memory listing = Listing({
+                owner: _createCollection.listing.owner,
+                duration: _createCollection.listing.duration,
+                created: uint40(block.timestamp),
+                floorMultiple: _createCollection.listing.floorMultiple
+            });
             listings[_createCollection.collection][
                 _createCollection.tokenIds[i]
             ] = listing;
@@ -81,11 +87,16 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
             _createListing.tokenId
         );
 
-        Listing memory listing = Listing(_createListing.collection);
+        Listing memory listing = Listing({
+            owner: _createListing.listing.owner,
+            duration: _createListing.listing.duration,
+            created: uint40(block.timestamp),
+            floorMultiple: _createListing.listing.floorMultiple
+        });
         listings[_createListing.collection][_createListing.tokenId] = listing;
 
         address collectionToken = collectionTokens[_createListing.collection];
-        CollectionToken(collectionToken).mint(_createListing.receiver, 1 ether);
+        CollectionToken(collectionToken).mint(_createListing.listing.owner, 1 ether);
     }
 
     function cancelListing(

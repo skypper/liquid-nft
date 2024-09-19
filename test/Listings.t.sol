@@ -27,7 +27,12 @@ contract ListingsTest is Test {
     function test_createCollection(uint256 tokenId) public {
         vm.assume(tokenId != 0 && tokenId < type(uint256).max - 4);
         uint256[] memory tokenIds = new uint256[](4);
-        IListings.Listing memory listing = IListings.Listing(address(this));
+        IListings.Listing memory listing = IListings.Listing({
+            owner: address(this),
+            duration: 1 hours,
+            created: 0,
+            floorMultiple: uint16(3 * listings.FLOOR_MULTIPLE_PRECISION())
+        });
         for (uint256 i; i < 4; ++i) {
             tokenIds[i] = tokenId + i;
 
@@ -48,7 +53,12 @@ contract ListingsTest is Test {
 
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = tokenId;
-        IListings.Listing memory listing = IListings.Listing(address(this));
+        IListings.Listing memory listing = IListings.Listing({
+            owner: address(this),
+            duration: 1 hours,
+            created: 0,
+            floorMultiple: uint16(3 * listings.FLOOR_MULTIPLE_PRECISION())
+        });
         
         vm.expectRevert();
         listings.createCollection(IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing));

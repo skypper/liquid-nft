@@ -4,9 +4,9 @@ pragma solidity ^0.8.27;
 interface IListings {
     struct Listing {
         address owner;
-        // uint40 duration;
-        // uint40 created;
-        // uint16 floorMultiple;
+        uint40 duration;
+        uint40 created;
+        uint16 floorMultiple;
     }
     struct CreateCollection {
         string name;
@@ -18,7 +18,7 @@ interface IListings {
     struct CreateListing {
         address collection;
         uint256 tokenId;
-        address receiver;
+        Listing listing;
     }
     struct CancelListing {
         address collection;
