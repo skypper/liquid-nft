@@ -29,7 +29,7 @@ contract ListingsTest is Test {
         uint256[] memory tokenIds = new uint256[](4);
         IListings.Listing memory listing = IListings.Listing({
             owner: address(this),
-            duration: 1 hours,
+            duration: 1 days,
             created: 0,
             floorMultiple: uint16(3 * listings.FLOOR_MULTIPLE_PRECISION())
         });
@@ -57,7 +57,7 @@ contract ListingsTest is Test {
         tokenIds[0] = tokenId;
         IListings.Listing memory listing = IListings.Listing({
             owner: address(this),
-            duration: 1 hours,
+            duration: 1 days,
             created: 0,
             floorMultiple: uint16(3 * listings.FLOOR_MULTIPLE_PRECISION())
         });
