@@ -30,6 +30,7 @@ interface IListings {
     error CollectionNotExists();
     error NotEnoughNFTs();
     error FloorMultipleTooLow();
+    error ListingExists();
 
     function createCollection(
         CreateCollection calldata _createCollection

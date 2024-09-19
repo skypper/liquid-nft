@@ -85,6 +85,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         CreateListing calldata _createListing
     ) external nonReentrant collectionExists(_createListing.collection) {
         Listing memory listing_ = _createListing.listing;
+        require(listings[_createListing.collection][_createListing.tokenId].owner == address(0), ListingExists());
         require(listing_.floorMultiple >= FLOOR_MULTIPLE_PRECISION, FloorMultipleTooLow());
 
         IERC721(_createListing.collection).safeTransferFrom(
