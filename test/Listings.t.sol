@@ -40,8 +40,10 @@ contract ListingsTest is Test {
         }
 
         nft1.setApprovalForAll(address(listings), true);
-        
-        listings.createCollection(IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing));
+
+        listings.createCollection(
+            IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing)
+        );
     }
 
     function test_createCollectionNotEnoughNFTs(uint256 tokenId) public {
@@ -59,8 +61,10 @@ contract ListingsTest is Test {
             created: 0,
             floorMultiple: uint16(3 * listings.FLOOR_MULTIPLE_PRECISION())
         });
-        
+
         vm.expectRevert();
-        listings.createCollection(IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing));
+        listings.createCollection(
+            IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing)
+        );
     }
 }

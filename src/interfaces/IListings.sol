@@ -8,6 +8,7 @@ interface IListings {
         uint40 created;
         uint16 floorMultiple;
     }
+
     struct CreateCollection {
         string name;
         string symbol;
@@ -15,16 +16,19 @@ interface IListings {
         uint256[] tokenIds;
         Listing listing;
     }
+
     struct CreateListing {
         address collection;
         uint256 tokenId;
         Listing listing;
     }
+
     struct CancelListing {
         address collection;
         uint256 tokenId;
         address receiver;
     }
+
     struct FillListing {
         address collection;
         uint256 tokenId;
@@ -38,19 +42,11 @@ interface IListings {
     error Unauthorized();
     error ListingExpired();
 
-    function createCollection(
-        CreateCollection calldata _createCollection
-    ) external;
+    function createCollection(CreateCollection calldata _createCollection) external;
 
-    function createListing(
-        CreateListing calldata _createListing
-    ) external;
+    function createListing(CreateListing calldata _createListing) external;
 
-    function cancelListing(
-        CancelListing calldata _cancelListing
-    ) external;
-    
-    function fillListing(
-        FillListing calldata _fillListing
-    ) external;
+    function cancelListing(CancelListing calldata _cancelListing) external;
+
+    function fillListing(FillListing calldata _fillListing) external;
 }
