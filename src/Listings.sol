@@ -11,8 +11,12 @@ import {CollectionToken} from "./CollectionToken.sol";
 contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     event CollectionCreated(address collection, uint256[] tokenId, Listing listing);
 
-    uint256 public constant BOOTSTRAP_NFTS = 3;
+    uint256 public constant BOOTSTRAP_NFTS = 4;
+
+    uint256 public constant MINIMUM_DURATION = 1 days;
+    uint256 public constant MAXIMUM_DURATION = 365 days;
     uint256 public constant FLOOR_MULTIPLE_PRECISION = 100;
+    uint256 public constant MAXIMUM_FLOOR_MULTIPLE = 500_00;
 
     mapping(address collection => mapping(uint256 tokenId => Listing)) listings;
     mapping(address collection => bool) collectionCreated;
@@ -26,12 +30,13 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     function createCollection(CreateCollection calldata _createCollection) external nonReentrant {
         require(!collectionCreated[_createCollection.collection], CollectionNotExists());
 
-        require(_createCollection.tokenIds.length > BOOTSTRAP_NFTS, NotEnoughNFTs());
+        require(_createCollection.tokenIds.length >= BOOTSTRAP_NFTS, NotEnoughNFTs());
 
         uint256 tokenIdsCount = _createCollection.tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
             Listing memory listing_ = _createCollection.listing;
-            require(listing_.floorMultiple >= FLOOR_MULTIPLE_PRECISION, FloorMultipleTooLow());
+
+            _validateListing(listing_);
 
             IERC721(_createCollection.collection).safeTransferFrom(
                 msg.sender, address(this), _createCollection.tokenIds[i]
@@ -63,7 +68,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     {
         Listing memory listing_ = _createListing.listing;
         require(listings[_createListing.collection][_createListing.tokenId].owner == address(0), ListingExists());
-        require(listing_.floorMultiple >= FLOOR_MULTIPLE_PRECISION, FloorMultipleTooLow());
+
+        _validateListing(listing_);
 
         IERC721(_createListing.collection).safeTransferFrom(msg.sender, address(this), _createListing.tokenId);
 
@@ -77,6 +83,14 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
 
         address collectionToken = collectionTokens[_createListing.collection];
         CollectionToken(collectionToken).mint(listing_.owner, 1 ether);
+    }
+
+    function _validateListing(Listing memory listing) internal pure {
+        require(listing.owner != address(0), NoOwner());
+        require(listing.duration >= MINIMUM_DURATION, DurationTooShort());
+        require(listing.duration <= MAXIMUM_DURATION, DurationTooLong());
+        require(listing.floorMultiple >= FLOOR_MULTIPLE_PRECISION, FloorMultipleTooLow());
+        require(listing.floorMultiple <= MAXIMUM_FLOOR_MULTIPLE, FloorMultipleTooLow());
     }
 
     function cancelListing(CancelListing calldata _cancelListing)

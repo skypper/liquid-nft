@@ -37,6 +37,9 @@ interface IListings {
     error NotImplemented();
     error CollectionNotExists();
     error NotEnoughNFTs();
+    error NoOwner();
+    error DurationTooShort();
+    error DurationTooLong();
     error FloorMultipleTooLow();
     error ListingExists();
     error Unauthorized();
