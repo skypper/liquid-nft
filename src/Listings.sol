@@ -42,6 +42,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
 
         uint256 tokenIdsCount = _createCollection.tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
+            Listing memory listing_ = _createCollection.listing;
+
             IERC721(_createCollection.collection).safeTransferFrom(
                 msg.sender,
                 address(this),
@@ -49,10 +51,10 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
             );
 
             Listing memory listing = Listing({
-                owner: _createCollection.listing.owner,
-                duration: _createCollection.listing.duration,
+                owner: listing_.owner,
+                duration: listing_.duration,
                 created: uint40(block.timestamp),
-                floorMultiple: _createCollection.listing.floorMultiple
+                floorMultiple: listing_.floorMultiple
             });
             listings[_createCollection.collection][
                 _createCollection.tokenIds[i]
@@ -81,6 +83,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     function createListing(
         CreateListing calldata _createListing
     ) external nonReentrant collectionExists(_createListing.collection) {
+        Listing memory listing_ = _createListing.listing;
+
         IERC721(_createListing.collection).safeTransferFrom(
             msg.sender,
             address(this),
@@ -88,15 +92,15 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         );
 
         Listing memory listing = Listing({
-            owner: _createListing.listing.owner,
-            duration: _createListing.listing.duration,
+            owner: listing_.owner,
+            duration: listing_.duration,
             created: uint40(block.timestamp),
-            floorMultiple: _createListing.listing.floorMultiple
+            floorMultiple: listing_.floorMultiple
         });
         listings[_createListing.collection][_createListing.tokenId] = listing;
 
         address collectionToken = collectionTokens[_createListing.collection];
-        CollectionToken(collectionToken).mint(_createListing.listing.owner, 1 ether);
+        CollectionToken(collectionToken).mint(listing_.owner, 1 ether);
     }
 
     function cancelListing(
