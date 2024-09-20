@@ -138,7 +138,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         if (listing.created + listing.duration < block.timestamp) {
             return (false, 0);
         }
-        price = listing.floorMultiple * 1 ether / FLOOR_MULTIPLE_PRECISION;
+        price = uint256(listing.floorMultiple) * 1 ether / FLOOR_MULTIPLE_PRECISION;
+        isAvailable = true;
     }
 
     function isCollection(address collection) external view override returns (bool) {
