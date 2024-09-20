@@ -114,4 +114,39 @@ contract ListingsTest is Test {
         listings.cancelListing(cancelListing);
         vm.stopPrank();
     }
+
+    function test_fillListing(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+
+        address user = makeAddr("user");
+
+        _createCollection(tokenId, tokenIdsCount, user);
+
+        address otherUser = makeAddr("other");
+        address collectionToken = listings.collectionTokens(address(nft1));
+        deal(collectionToken, otherUser, 3 ether);
+        vm.startPrank(otherUser);
+        CollectionToken(collectionToken).approve(address(listings), 3 ether);
+        IListings.FillListing memory fillListing = IListings.FillListing({collection: address(nft1), tokenId: tokenId});
+        listings.fillListing(fillListing);
+        vm.stopPrank();
+
+        assertEq(CollectionToken(collectionToken).balanceOf(otherUser), 0);
+        assertFalse(listings.isListing(address(nft1), tokenId));
+    }
+
+    function testFail_fillListingListingExpired(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+
+        address user = makeAddr("user");
+
+        _createCollection(tokenId, tokenIdsCount, user);
+
+        IListings.FillListing memory fillListing = IListings.FillListing({collection: address(nft1), tokenId: tokenId});
+        vm.expectRevert(IListings.ListingExpired.selector);
+        vm.prank(user);
+        listings.fillListing(fillListing);
+    }
 }
