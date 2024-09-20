@@ -139,11 +139,11 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         price = listing.floorMultiple * 1 ether / FLOOR_MULTIPLE_PRECISION;
     }
 
-    function isCollection(address collection) external view returns(bool) {
+    function isCollection(address collection) external view override returns (bool) {
         return collectionCreated[collection];
     }
-    
-    function isListing(address collection, uint256 tokenId) external view returns(bool) {
+
+    function isListing(address collection, uint256 tokenId) external view override returns (bool) {
         return listings[collection][tokenId].owner != address(0);
     }
 

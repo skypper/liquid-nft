@@ -53,7 +53,7 @@ interface IListings {
 
     function fillListing(FillListing calldata _fillListing) external;
 
-    function isCollection(address collection) external view returns(bool);
+    function isCollection(address collection) external view returns (bool);
 
-    function isListing(address collection, uint256 tokenId) external view returns(bool);
+    function isListing(address collection, uint256 tokenId) external view returns (bool);
 }
