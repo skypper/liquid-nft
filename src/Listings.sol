@@ -130,6 +130,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         CollectionToken(collectionToken).transferFrom(msg.sender, listing.owner, ownerOwed);
         // transfer collection NFT to the filler
         IERC721(_fillListing.collection).transferFrom(address(this), msg.sender, _fillListing.tokenId);
+
+        delete listings[_fillListing.collection][_fillListing.tokenId];
     }
 
     function _resolveFee(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {
