@@ -18,9 +18,9 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     uint256 public constant FLOOR_MULTIPLE_PRECISION = 100;
     uint256 public constant MAXIMUM_FLOOR_MULTIPLE = 500_00;
 
-    mapping(address collection => mapping(uint256 tokenId => Listing)) listings;
-    mapping(address collection => bool) collectionCreated;
-    mapping(address collection => address collectionToken) collectionTokens;
+    mapping(address collection => mapping(uint256 tokenId => Listing)) private listings;
+    mapping(address collection => bool) private collectionCreated;
+    mapping(address collection => address collectionToken) public collectionTokens;
 
     modifier collectionExists(address collection) {
         require(collectionCreated[collection], CollectionNotExists());
@@ -137,6 +137,14 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
             return (false, 0);
         }
         price = listing.floorMultiple * 1 ether / FLOOR_MULTIPLE_PRECISION;
+    }
+
+    function isCollection(address collection) external view returns(bool) {
+        return collectionCreated[collection];
+    }
+    
+    function isListing(address collection, uint256 tokenId) external view returns(bool) {
+        return listings[collection][tokenId].owner != address(0);
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
