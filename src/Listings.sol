@@ -17,6 +17,9 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
     uint256 public constant MAXIMUM_DURATION = 365 days;
     uint256 public constant FLOOR_MULTIPLE_PRECISION = 100;
     uint256 public constant MAXIMUM_FLOOR_MULTIPLE = 500_00;
+    
+    uint256 public constant FEE_PERCENTAGE_PRECISION = 10_000;
+    uint256 public feePercentage = 500; // 5%
 
     mapping(address collection => mapping(uint256 tokenId => Listing)) private listings;
     mapping(address collection => bool) private collectionCreated;
@@ -118,7 +121,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         collectionExists(_fillListing.collection)
     {
         Listing memory listing = listings[_fillListing.collection][_fillListing.tokenId];
-        (bool isAvailable, uint256 price) = _resolveFee(listing);
+        (bool isAvailable, uint256 price) = _resolveListingPrice(listing);
         require(isAvailable, ListingExpired());
 
         address collectionToken = collectionTokens[_fillListing.collection];
@@ -134,7 +137,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         delete listings[_fillListing.collection][_fillListing.tokenId];
     }
 
-    function _resolveFee(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {
+    function _resolveListingPrice(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {
         if (listing.created + listing.duration < block.timestamp) {
             return (false, 0);
         }
