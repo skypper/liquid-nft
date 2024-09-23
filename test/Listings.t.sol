@@ -144,9 +144,33 @@ contract ListingsTest is Test {
 
         _createCollection(tokenId, tokenIdsCount, user);
 
+        vm.startPrank(user);
+        address collectionToken = listings.collectionTokens(address(nft1));
+        deal(collectionToken, user, 3 ether);
+
+        CollectionToken(collectionToken).approve(address(listings), 3 ether);
         IListings.FillListing memory fillListing = IListings.FillListing({collection: address(nft1), tokenId: tokenId});
-        vm.expectRevert(IListings.ListingExpired.selector);
-        vm.prank(user);
+        // roll time forward by 1 day to cause the listing to expire
+        vm.warp(block.timestamp + 1 days + 1);
         listings.fillListing(fillListing);
+        vm.stopPrank();
+    }
+
+    function testFail_fillListingInsufficientTokens(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+
+        address user = makeAddr("user");
+
+        _createCollection(tokenId, tokenIdsCount, user);
+
+        vm.startPrank(user);
+        address collectionToken = listings.collectionTokens(address(nft1));
+        deal(collectionToken, user, 2 ether); // not enough funds, the price is 3 ether
+
+        CollectionToken(collectionToken).approve(address(listings), 2 ether);
+        IListings.FillListing memory fillListing = IListings.FillListing({collection: address(nft1), tokenId: tokenId});
+        listings.fillListing(fillListing);
+        vm.stopPrank();
     }
 }
