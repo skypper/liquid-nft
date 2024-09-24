@@ -11,7 +11,7 @@ abstract contract TokenEscrow {
     function _deposit(address token, uint256 amount, address receiver) internal {
         balances[receiver][token] += amount;
     }
-    
+
     function withdraw(address token, uint256 amount, address recipient) public {
         require(balances[msg.sender][token] >= amount, InsufficientBalance());
         balances[msg.sender][token] -= amount;
