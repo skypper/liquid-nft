@@ -8,8 +8,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IListings} from "./interfaces/IListings.sol";
 import {CollectionToken} from "./CollectionToken.sol";
+import {TokenEscrow} from "./TokenEscrow.sol";
 
-contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable {
+contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, TokenEscrow {
     event CollectionCreated(address collection, uint256[] tokenId, Listing listing);
 
     uint256 public constant BOOTSTRAP_NFTS = 4;
@@ -18,7 +19,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable {
     uint256 public constant MAXIMUM_DURATION = 365 days;
     uint256 public constant FLOOR_MULTIPLE_PRECISION = 100;
     uint256 public constant MAXIMUM_FLOOR_MULTIPLE = 500_00;
-    
+
     uint256 public constant FEE_PERCENTAGE_PRECISION = 10_000;
     uint256 public feePercentage = 500; // 5%
 
@@ -124,10 +125,21 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable {
         nonReentrant
         collectionExists(_cancelListing.collection)
     {
-        require(msg.sender == listings[_cancelListing.collection][_cancelListing.tokenId].owner, Unauthorized());
+        Listing memory listing = listings[_cancelListing.collection][_cancelListing.tokenId];
+        require(msg.sender == listing.owner, Unauthorized());
 
         address collectionToken = collectionTokens[_cancelListing.collection];
-        CollectionToken(collectionToken).burn(msg.sender, 1 ether);
+
+        (uint256 listingTax, uint256 refund) = _resolveListingTax(listing);
+
+        // deduct the refund from the collected tax
+        uint256 collectedTax = listingTax - refund;
+
+        // deduct the refund from the collection token that would be burned from the owner
+        uint256 tokensOwned = 1 ether - refund;
+
+        CollectionToken(collectionToken).burn(msg.sender, tokensOwned);
+        _deposit(collectionToken, collectedTax, owner());
 
         IERC721(_cancelListing.collection).safeTransferFrom(
             address(this), _cancelListing.receiver, _cancelListing.tokenId
@@ -145,13 +157,27 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable {
         (bool isAvailable, uint256 price) = _resolveListingPrice(listing);
         require(isAvailable, ListingExpired());
 
+        (uint256 listingTax, uint256 refund) = _resolveListingTax(listing);
+        uint256 taxCollected = listingTax - refund;
+
         address collectionToken = collectionTokens[_fillListing.collection];
 
         uint256 ownerOwed = price - 1 ether;
+
+        // transfer the price to the contract
+        CollectionToken(collectionToken).transferFrom(msg.sender, address(this), price);
+
         // burn the floor price (immediately provided to the listing's owner)
-        CollectionToken(collectionToken).burn(msg.sender, 1 ether);
-        // transfer the difference upwards from the floor price to the listing's owner
-        CollectionToken(collectionToken).transferFrom(msg.sender, listing.owner, ownerOwed);
+        CollectionToken(collectionToken).burn(address(this), 1 ether - refund);
+
+        CollectionToken(collectionToken).transfer(listing.owner, ownerOwed);
+
+        // hold in escrow the tax to be paid to the contract owner (excluding the refund)
+        _deposit(collectionToken, taxCollected, owner());
+
+        // hold in escrow the difference upwards from the floor price to the listing's owner
+        _deposit(collectionToken, ownerOwed + refund, listing.owner);
+
         // transfer collection NFT to the filler
         IERC721(_fillListing.collection).transferFrom(address(this), msg.sender, _fillListing.tokenId);
 
