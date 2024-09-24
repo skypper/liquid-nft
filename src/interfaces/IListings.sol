@@ -44,6 +44,7 @@ interface IListings {
     error ListingExists();
     error Unauthorized();
     error ListingExpired();
+    error TaxOverflow();
 
     function createCollection(CreateCollection calldata _createCollection) external;
 

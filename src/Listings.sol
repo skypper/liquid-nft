@@ -35,6 +35,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
 
         require(_createCollection.tokenIds.length >= BOOTSTRAP_NFTS, NotEnoughNFTs());
 
+        uint256 listingTaxes;
         uint256 tokenIdsCount = _createCollection.tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
             Listing memory listing_ = _createCollection.listing;
@@ -52,6 +53,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
                 floorMultiple: listing_.floorMultiple
             });
             listings[_createCollection.collection][_createCollection.tokenIds[i]] = listing;
+            (uint256 listingTax,) = _resolveListingTax(listing);
+            listingTaxes += listingTax;
         }
 
         collectionCreated[_createCollection.collection] = true;
@@ -59,7 +62,14 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
             new CollectionToken(_createCollection.name, _createCollection.symbol, address(this));
         collectionTokens[_createCollection.collection] = address(collectionToken);
 
-        collectionToken.mint(msg.sender, tokenIdsCount * 1 ether);
+        uint256 tokensReceived = tokenIdsCount * 1 ether;
+        if (tokensReceived < listingTaxes) {
+            revert TaxOverflow();
+        }
+        unchecked {
+            tokensReceived -= listingTaxes;
+        }
+        collectionToken.mint(msg.sender, tokensReceived);
 
         emit CollectionCreated(_createCollection.collection, _createCollection.tokenIds, _createCollection.listing);
     }
@@ -143,6 +153,14 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         }
         price = _getListingPrice(listing);
         isAvailable = true;
+    }
+
+    function _resolveListingTax(Listing memory listing) internal view returns (uint256 tax, uint256 refund) {
+        uint256 price = _getListingPrice(listing);
+        tax = price * feePercentage / FEE_PERCENTAGE_PRECISION;
+        if (listing.created + listing.duration < block.timestamp) {
+            refund = price * (listing.created - block.timestamp) / listing.duration;
+        }
     }
 
     function _getListingPrice(Listing memory listing) internal pure returns (uint256 price) {
