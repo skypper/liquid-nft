@@ -167,7 +167,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         uint256 price = _getListingPrice(listing);
         tax = price * feePercentage / FEE_PERCENTAGE_PRECISION;
         if (listing.created + listing.duration < block.timestamp) {
-            refund = price * (listing.created - block.timestamp) / listing.duration;
+            refund = tax * (listing.created - block.timestamp) / listing.duration;
         }
     }
 
