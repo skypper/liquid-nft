@@ -95,6 +95,14 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         });
         listings[_createListing.collection][_createListing.tokenId] = listing;
 
+        uint256 tokensReceived = 1 ether;
+        (uint256 listingTax,) = _resolveListingTax(listing);
+        if (tokensReceived < listingTax) {
+            revert TaxOverflow();
+        }
+        unchecked {
+            tokensReceived -= listingTax;
+        }
         address collectionToken = collectionTokens[_createListing.collection];
         CollectionToken(collectionToken).mint(listing_.owner, 1 ether);
     }
