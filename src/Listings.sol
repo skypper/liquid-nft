@@ -4,11 +4,12 @@ pragma solidity ^0.8.27;
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IListings} from "./interfaces/IListings.sol";
 import {CollectionToken} from "./CollectionToken.sol";
 
-contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
+contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable {
     event CollectionCreated(address collection, uint256[] tokenId, Listing listing);
 
     uint256 public constant BOOTSTRAP_NFTS = 4;
@@ -29,6 +30,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver {
         require(collectionCreated[collection], CollectionNotExists());
         _;
     }
+
+    constructor() Ownable(msg.sender) {}
 
     function createCollection(CreateCollection calldata _createCollection) external override nonReentrant {
         require(!collectionCreated[_createCollection.collection], CollectionNotExists());
