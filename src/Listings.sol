@@ -186,6 +186,19 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         delete listings[_fillListing.collection][_fillListing.tokenId];
     }
 
+    function transferOwnership(address collection, uint256 tokenId, address newOwner)
+        public
+        nonReentrant
+        collectionExists(collection)
+    {
+        Listing memory listing = listings[collection][tokenId];
+        require(listing.owner != address(0), ListingNotExists());
+        require(msg.sender == listing.owner, Unauthorized());
+        require(newOwner != address(0), NoOwner());
+
+        listing.owner = newOwner;
+    }
+
     function _resolveListingPrice(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {
         if (listing.created + listing.duration < block.timestamp) {
             return (false, 0);
