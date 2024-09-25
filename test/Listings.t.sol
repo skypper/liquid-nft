@@ -151,7 +151,7 @@ contract ListingsTest is Test {
         CollectionToken(collectionToken).approve(address(listings), 3 ether);
         IListings.FillListing memory fillListing = IListings.FillListing({collection: address(nft1), tokenId: tokenId});
         // roll time forward by 1 day to cause the listing to expire
-        vm.warp(block.timestamp + 1 days + 1);
+        vm.warp(block.timestamp + 1 days + 3 days + 1);
         listings.fillListing(fillListing);
         vm.stopPrank();
     }

@@ -17,6 +17,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
 
     uint256 public constant MINIMUM_DURATION = 1 days;
     uint256 public constant MAXIMUM_DURATION = 365 days;
+    uint256 public constant EXPIRED_DUTCH_AUCTION_DURATION = 3 days;
     uint256 public constant FLOOR_MULTIPLE_PRECISION = 100;
     uint256 public constant MAXIMUM_FLOOR_MULTIPLE = 500_00;
 
@@ -200,11 +201,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     }
 
     function _resolveListingPrice(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {
-        if (listing.created + listing.duration < block.timestamp) {
-            return (false, 0);
-        }
+        isAvailable = uint256(listing.created) + uint256(listing.duration) + EXPIRED_DUTCH_AUCTION_DURATION >= block.timestamp;
         price = _getListingPrice(listing);
-        isAvailable = true;
     }
 
     function _resolveListingTax(Listing memory listing) internal view returns (uint256 tax, uint256 refund) {
@@ -219,8 +217,24 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         }
     }
 
-    function _getListingPrice(Listing memory listing) internal pure returns (uint256 price) {
-        price = uint256(listing.floorMultiple) * 1 ether / FLOOR_MULTIPLE_PRECISION;
+    function _getListingPrice(Listing memory listing) internal view returns (uint256 price) {
+        uint256 floorPrice = 1 ether;
+        price = uint256(listing.floorMultiple) * floorPrice / FLOOR_MULTIPLE_PRECISION;
+        
+        uint256 expiresAt = listing.created + listing.duration;
+        // if the listing is still active return the price as is
+        if (block.timestamp <= expiresAt) {
+            return price;
+        }
+
+        // if the listing has expired, calculate the price based on the dutch auction
+        if (block.timestamp - expiresAt < EXPIRED_DUTCH_AUCTION_DURATION) {
+            unchecked {
+                price = floorPrice + (price - floorPrice) * (block.timestamp - expiresAt) / EXPIRED_DUTCH_AUCTION_DURATION;
+            }
+        } else {
+            price = floorPrice;
+        }
     }
 
     function isCollection(address collection) external view override returns (bool) {
