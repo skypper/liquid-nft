@@ -42,6 +42,7 @@ interface IListings {
     error DurationTooLong();
     error FloorMultipleTooLow();
     error ListingExists();
+    error ListingNotExists();
     error Unauthorized();
     error ListingExpired();
     error TaxOverflow();

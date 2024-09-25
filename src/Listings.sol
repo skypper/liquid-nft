@@ -154,6 +154,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         collectionExists(_fillListing.collection)
     {
         Listing memory listing = listings[_fillListing.collection][_fillListing.tokenId];
+        require(listing.owner != address(0), ListingNotExists());
+
         (bool isAvailable, uint256 price) = _resolveListingPrice(listing);
         require(isAvailable, ListingExpired());
 
