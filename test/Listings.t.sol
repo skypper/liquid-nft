@@ -174,6 +174,33 @@ contract ListingsTest is Test {
         vm.stopPrank();
     }
 
+    function test_listingPricingCorrectness(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+
+        address user = makeAddr("user");
+
+        _createCollection(tokenId, tokenIdsCount, user);
+
+        assertEq(listings.getListingPrice(address(nft1), tokenId), 3 ether);
+        vm.warp(block.timestamp + 0.5 days);
+        assertEq(listings.getListingPrice(address(nft1), tokenId), 3 ether);
+
+        vm.warp(block.timestamp + 0.5 days);
+        assertEq(listings.getListingPrice(address(nft1), tokenId), 3 ether);
+
+        console.log("EXPIRED");
+
+        // the listing expires after 1 day; the dutch auction starts at 3 ether and decreases until 1 ether for 3 days
+        // given that the price is 3 ether and the floor is 1 ether, 2 ether is evenly spaces out during those 3 days
+        // 6 evenly distributed points over 3 days is 1 point every 12 hours, so the price should decrease by 0.333 ether every 12 hours
+        uint256 points = 6;
+        for (uint256 i; i < points; ++i) {
+            vm.warp(block.timestamp + 3 days / 6);
+            assertApproxEqRel(listings.getListingPrice(address(nft1), tokenId), 3 ether - 0.333 ether * (i + 1), 0.01 ether);
+        }
+    }
+
     function test_transferOwnership(uint256 tokenId) public {
         uint256 tokenIdsCount = 4;
         vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
