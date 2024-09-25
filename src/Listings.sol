@@ -136,9 +136,9 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         uint256 collectedTax = listingTax - refund;
 
         // deduct the refund from the collection token that would be burned from the owner
-        uint256 tokensOwned = 1 ether - refund;
+        uint256 tokensOwed = 1 ether - refund;
 
-        CollectionToken(collectionToken).burn(msg.sender, tokensOwned);
+        CollectionToken(collectionToken).burn(msg.sender, tokensOwed);
         _deposit(collectionToken, collectedTax, owner());
 
         IERC721(_cancelListing.collection).safeTransferFrom(
