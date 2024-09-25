@@ -191,7 +191,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         nonReentrant
         collectionExists(collection)
     {
-        Listing memory listing = listings[collection][tokenId];
+        Listing storage listing = listings[collection][tokenId];
         require(listing.owner != address(0), ListingNotExists());
         require(msg.sender == listing.owner, Unauthorized());
         require(newOwner != address(0), NoOwner());
