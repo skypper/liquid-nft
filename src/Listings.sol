@@ -210,8 +210,12 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     function _resolveListingTax(Listing memory listing) internal view returns (uint256 tax, uint256 refund) {
         uint256 price = _getListingPrice(listing);
         tax = price * feePercentage / FEE_PERCENTAGE_PRECISION;
-        if (listing.created + listing.duration < block.timestamp) {
-            refund = tax * (listing.created - block.timestamp) / listing.duration;
+
+        uint256 expiresAt = listing.created + listing.duration;
+        // if the listing is still active, calculate the refund
+        if (expiresAt > block.timestamp) {
+            // refund is proportional to the amount of time the listing has left before expiration
+            refund = tax * (expiresAt - block.timestamp) / listing.duration;
         }
     }
 
