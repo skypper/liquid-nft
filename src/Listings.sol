@@ -227,6 +227,10 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         return listings[collection][tokenId].owner != address(0);
     }
 
+    function ownerOf(address collection, uint256 tokenId) external view returns (address) {
+        return listings[collection][tokenId].owner;
+    }
+
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }

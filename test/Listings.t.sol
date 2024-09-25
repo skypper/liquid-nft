@@ -173,4 +173,21 @@ contract ListingsTest is Test {
         listings.fillListing(fillListing);
         vm.stopPrank();
     }
+
+    function test_transferOwnership(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+
+        address user = makeAddr("user");
+
+        _createCollection(tokenId, tokenIdsCount, user);
+
+        address newOwner = makeAddr("newOwner");
+
+        assertTrue(listings.ownerOf(address(nft1), tokenId) == user);
+        vm.prank(user);
+        address collection = address(nft1);
+        listings.transferOwnership(collection, tokenId, newOwner);
+        assertTrue(listings.ownerOf(address(nft1), tokenId) == newOwner);
+    }
 }
