@@ -197,7 +197,9 @@ contract ListingsTest is Test {
         uint256 points = 6;
         for (uint256 i; i < points; ++i) {
             vm.warp(block.timestamp + 3 days / 6);
-            assertApproxEqRel(listings.getListingPrice(address(nft1), tokenId), 3 ether - 0.333 ether * (i + 1), 0.01 ether);
+            assertApproxEqRel(
+                listings.getListingPrice(address(nft1), tokenId), 3 ether - 0.333 ether * (i + 1), 0.01 ether
+            );
         }
     }
 
