@@ -11,10 +11,9 @@ import {CollectionToken} from "./CollectionToken.sol";
 import {TokenEscrow} from "./TokenEscrow.sol";
 
 /**
- * Handles the listings of the NFT marketplace: collection creation, listing creation, listing cancelation, listing filling, listing ownership transfer. 
+ * Handles the listings of the NFT marketplace: collection creation, listing creation, listing cancelation, listing filling, listing ownership transfer.
  */
 contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, TokenEscrow {
-
     // Emitted when a new collection is created
     event CollectionCreated(address collection, uint256[] tokenId, Listing listing);
 
