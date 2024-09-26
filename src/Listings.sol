@@ -10,28 +10,56 @@ import {IListings} from "./interfaces/IListings.sol";
 import {CollectionToken} from "./CollectionToken.sol";
 import {TokenEscrow} from "./TokenEscrow.sol";
 
+/**
+ * Handles the listings of the NFT marketplace: collection creation, listing creation, listing cancelation, listing filling, listing ownership transfer. 
+ */
 contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, TokenEscrow {
+
+    // Emitted when a new collection is created
     event CollectionCreated(address collection, uint256[] tokenId, Listing listing);
+
+    // Emitted when a new listing is created
     event ListingCreated(address collection, uint256 tokenId, Listing listing);
+
+    // Emitted when a listing is cancelled
     event ListingCancelled(address collection, uint256 tokenId);
+
+    // Emitted when a listing is filled
     event ListingFilled(address collection, uint256 tokenId, uint256 price);
+
+    // Emitted when on a listing ownership transfer
     event OwnershipTransferred(address collection, uint256 tokenId, address oldOwner, address newOwner);
 
-    uint256 public constant BOOTSTRAP_NFTS = 4;
+    // The minimum number of listings required to create a collection
+    uint256 public constant BOOTSTRAP_LISTINGS = 4;
 
+    // The minimum and maximum duration of a listing
     uint256 public constant MINIMUM_DURATION = 1 days;
     uint256 public constant MAXIMUM_DURATION = 365 days;
+
+    // The duration of the Dutch auction after a listing expired
     uint256 public constant EXPIRED_DUTCH_AUCTION_DURATION = 3 days;
+
+    // Parameters for floor prices and multiples
     uint256 public constant FLOOR_MULTIPLE_PRECISION = 100;
     uint256 public constant MAXIMUM_FLOOR_MULTIPLE = 500_00;
 
+    // Parameters for listing fee
     uint256 public constant FEE_PERCENTAGE_PRECISION = 10_000;
     uint256 public feePercentage = 500; // 5%
 
+    // Stores all listings on record
     mapping(address collection => mapping(uint256 tokenId => Listing)) private listings;
+
+    // Mapping for created collections
     mapping(address collection => bool) private collectionCreated;
+
+    // Mapping the corresponding fungible token for a collection
     mapping(address collection => address collectionToken) public collectionTokens;
 
+    /**
+     * Helper modifier to prevent the function from being called if the collection does not exist
+     */
     modifier collectionExists(address collection) {
         require(collectionCreated[collection], CollectionNotExists());
         _;
@@ -42,7 +70,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     function createCollection(CreateCollection calldata _createCollection) external override nonReentrant {
         require(!collectionCreated[_createCollection.collection], CollectionNotExists());
 
-        require(_createCollection.tokenIds.length >= BOOTSTRAP_NFTS, NotEnoughNFTs());
+        require(_createCollection.tokenIds.length >= BOOTSTRAP_LISTINGS, NotEnoughNFTs());
 
         uint256 listingTaxes;
         uint256 tokenIdsCount = _createCollection.tokenIds.length;
