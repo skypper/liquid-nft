@@ -12,6 +12,10 @@ import {TokenEscrow} from "./TokenEscrow.sol";
 
 contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, TokenEscrow {
     event CollectionCreated(address collection, uint256[] tokenId, Listing listing);
+    event ListingCreated(address collection, uint256 tokenId, Listing listing);
+    event ListingCancelled(address collection, uint256 tokenId);
+    event ListingFilled(address collection, uint256 tokenId, uint256 price);
+    event OwnershipTransferred(address collection, uint256 tokenId, address oldOwner, address newOwner);
 
     uint256 public constant BOOTSTRAP_NFTS = 4;
 
@@ -110,6 +114,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         }
         address collectionToken = collectionTokens[_createListing.collection];
         CollectionToken(collectionToken).mint(listing_.owner, 1 ether);
+
+        emit ListingCreated(_createListing.collection, _createListing.tokenId, _createListing.listing);
     }
 
     function _validateListing(Listing calldata listing) internal pure {
@@ -146,6 +152,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
             address(this), _cancelListing.receiver, _cancelListing.tokenId
         );
         delete listings[_cancelListing.collection][_cancelListing.tokenId];
+
+        emit ListingCancelled(_cancelListing.collection, _cancelListing.tokenId);
     }
 
     function fillListing(FillListing calldata _fillListing)
@@ -185,6 +193,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         IERC721(_fillListing.collection).transferFrom(address(this), msg.sender, _fillListing.tokenId);
 
         delete listings[_fillListing.collection][_fillListing.tokenId];
+
+        emit ListingFilled(_fillListing.collection, _fillListing.tokenId, price);
     }
 
     function transferOwnership(address collection, uint256 tokenId, address newOwner)
@@ -193,11 +203,16 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         collectionExists(collection)
     {
         Listing storage listing = listings[collection][tokenId];
+        // cache
+        address oldOwner = listing.owner;
+
         require(listing.owner != address(0), ListingNotExists());
         require(msg.sender == listing.owner, Unauthorized());
         require(newOwner != address(0), NoOwner());
 
         listing.owner = newOwner;
+
+        emit OwnershipTransferred(collection, tokenId, oldOwner, newOwner);
     }
 
     function _resolveListingPrice(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {

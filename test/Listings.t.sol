@@ -42,6 +42,10 @@ contract ListingsTest is Test {
         vm.startPrank(receiver);
         nft1.setApprovalForAll(address(listings), true);
 
+        // Confirm that the expected event is fired
+        vm.expectEmit();
+        emit Listings.CollectionCreated(address(nft1), tokenIds, listing);
+
         listings.createCollection(
             IListings.CreateCollection("Mock Collection", "CMOCK", address(nft1), tokenIds, listing)
         );
@@ -111,6 +115,11 @@ contract ListingsTest is Test {
 
         vm.startPrank(user);
         CollectionToken(collectionToken).approve(address(listings), 1 ether);
+
+        // Confirm that the expected event is fired
+        vm.expectEmit();
+        emit Listings.ListingCancelled(address(nft1), tokenId);
+
         listings.cancelListing(cancelListing);
         vm.stopPrank();
     }
@@ -128,6 +137,12 @@ contract ListingsTest is Test {
         deal(collectionToken, otherUser, 3 ether);
         vm.startPrank(otherUser);
         CollectionToken(collectionToken).approve(address(listings), 3 ether);
+
+        // Confirm that the expected event is fired
+        vm.expectEmit();
+        uint256 expectedPrice = listings.getListingPrice(address(nft1), tokenId);
+        emit Listings.ListingFilled(address(nft1), tokenId, expectedPrice);
+
         IListings.FillListing memory fillListing = IListings.FillListing({collection: address(nft1), tokenId: tokenId});
         listings.fillListing(fillListing);
         vm.stopPrank();
@@ -216,6 +231,11 @@ contract ListingsTest is Test {
         assertTrue(listings.ownerOf(address(nft1), tokenId) == user);
         vm.prank(user);
         address collection = address(nft1);
+
+        // Confirm that the expected event is fired
+        vm.expectEmit();
+        emit Listings.OwnershipTransferred(address(nft1), tokenId, user, newOwner);
+
         listings.transferOwnership(collection, tokenId, newOwner);
         assertTrue(listings.ownerOf(address(nft1), tokenId) == newOwner);
     }
