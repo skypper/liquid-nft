@@ -43,7 +43,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         uint256 listingTaxes;
         uint256 tokenIdsCount = _createCollection.tokenIds.length;
         for (uint256 i; i < tokenIdsCount; ++i) {
-            Listing memory listing_ = _createCollection.listing;
+            Listing calldata listing_ = _createCollection.listing;
 
             _validateListing(listing_);
 
@@ -85,7 +85,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         nonReentrant
         collectionExists(_createListing.collection)
     {
-        Listing memory listing_ = _createListing.listing;
+        Listing calldata listing_ = _createListing.listing;
         require(listings[_createListing.collection][_createListing.tokenId].owner == address(0), ListingExists());
 
         _validateListing(listing_);
@@ -112,7 +112,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         CollectionToken(collectionToken).mint(listing_.owner, 1 ether);
     }
 
-    function _validateListing(Listing memory listing) internal pure {
+    function _validateListing(Listing calldata listing) internal pure {
         require(listing.owner != address(0), NoOwner());
         require(listing.duration >= MINIMUM_DURATION, DurationTooShort());
         require(listing.duration <= MAXIMUM_DURATION, DurationTooLong());
