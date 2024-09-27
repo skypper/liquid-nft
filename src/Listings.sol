@@ -64,8 +64,16 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         _;
     }
 
+    /**
+     * Creates a new instance of the Listings contract with the owner initialized as `msg.sender`.
+     */
     constructor() Ownable(msg.sender) {}
 
+    /**
+     * Creates a new collection with the given token IDs and listing parameters.
+     *
+     * @param _createCollection The parameters for the collection creation
+     */
     function createCollection(CreateCollection calldata _createCollection) external override nonReentrant {
         require(!collectionCreated[_createCollection.collection], CollectionNotExists());
 
@@ -110,6 +118,10 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         emit CollectionCreated(_createCollection.collection, _createCollection.tokenIds, _createCollection.listing);
     }
 
+    /**
+     * Creates a new listing for the given collection and token ID.
+     * @param _createListing The parameters for the listing creation
+     */
     function createListing(CreateListing calldata _createListing)
         external
         override
@@ -145,6 +157,11 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         emit ListingCreated(_createListing.collection, _createListing.tokenId, _createListing.listing);
     }
 
+    /**
+     * Internal logic for validating a listing. If any of the requirements are not met, the function will revert.
+     *
+     * @param listing The listing to validate
+     */
     function _validateListing(Listing calldata listing) internal pure {
         require(listing.owner != address(0), NoOwner());
         require(listing.duration >= MINIMUM_DURATION, DurationTooShort());
@@ -153,6 +170,11 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         require(listing.floorMultiple <= MAXIMUM_FLOOR_MULTIPLE, FloorMultipleTooLow());
     }
 
+    /**
+     * Cancels a listing for the given collection and token ID.
+     *
+     * @param _cancelListing The parameters for the listing cancellation
+     */
     function cancelListing(CancelListing calldata _cancelListing)
         external
         override
@@ -173,6 +195,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         uint256 tokensOwed = 1 ether - refund;
 
         CollectionToken(collectionToken).burn(msg.sender, tokensOwed);
+        // store the collected tax in escrow to be paid to the contract owner
         _deposit(collectionToken, collectedTax, owner());
 
         IERC721(_cancelListing.collection).safeTransferFrom(
@@ -183,6 +206,11 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         emit ListingCancelled(_cancelListing.collection, _cancelListing.tokenId);
     }
 
+    /**
+     * Fills a listing for the given collection and token ID.
+     *
+     * @param _fillListing The parameters for the listing filling
+     */
     function fillListing(FillListing calldata _fillListing)
         external
         override
@@ -202,12 +230,13 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
 
         uint256 ownerOwed = price - 1 ether;
 
-        // transfer the price to the contract
+        // transfer the price to the contract from the filler
         CollectionToken(collectionToken).transferFrom(msg.sender, address(this), price);
 
         // burn the floor price (immediately provided to the listing's owner)
         CollectionToken(collectionToken).burn(address(this), 1 ether - refund);
 
+        // transfer the rest of the price to the listing's owner (excluding the floor price which owner immediately received on listing creation)
         CollectionToken(collectionToken).transfer(listing.owner, ownerOwed);
 
         // hold in escrow the tax to be paid to the contract owner (excluding the refund)
@@ -219,11 +248,19 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         // transfer collection NFT to the filler
         IERC721(_fillListing.collection).transferFrom(address(this), msg.sender, _fillListing.tokenId);
 
+        // remove the listing record
         delete listings[_fillListing.collection][_fillListing.tokenId];
 
         emit ListingFilled(_fillListing.collection, _fillListing.tokenId, price);
     }
 
+    /**
+     * Transfers the ownership of a listing to a new owner.
+     *
+     * @param collection The collection of the listing
+     * @param tokenId The token ID of the listing
+     * @param newOwner The new owner of the listing
+     */
     function transferOwnership(address collection, uint256 tokenId, address newOwner)
         public
         nonReentrant
@@ -242,12 +279,19 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         emit OwnershipTransferred(collection, tokenId, oldOwner, newOwner);
     }
 
+    /**
+     * Internal logic to resolve the availability and price of a listing.
+     */
     function _resolveListingPrice(Listing memory listing) internal view returns (bool isAvailable, uint256 price) {
         isAvailable =
             uint256(listing.created) + uint256(listing.duration) + EXPIRED_DUTCH_AUCTION_DURATION >= block.timestamp;
         price = _getListingPrice(listing);
     }
 
+    /**
+     * Internal logic to resolve the tax and refund of a listing.
+     * The refund is directly proportional to the amount of time left before the listing expires.
+     */
     function _resolveListingTax(Listing memory listing) internal view returns (uint256 tax, uint256 refund) {
         uint256 price = _getListingPrice(listing);
         tax = price * feePercentage / FEE_PERCENTAGE_PRECISION;
@@ -260,6 +304,13 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         }
     }
 
+    /**
+     * Internal logic to calculate the price of a listing which is determined by the floor price and the floor multiple.
+     * If the listing has expired, the price will decrease linearly over the course of the Dutch auction towards the floor price.
+     *
+     * @param listing The listing to calculate the price for
+     * @return price The price of the listing
+     */
     function _getListingPrice(Listing memory listing) internal view returns (uint256 price) {
         uint256 floorPrice = 1 ether;
         price = uint256(listing.floorMultiple) * floorPrice / FLOOR_MULTIPLE_PRECISION;
@@ -270,36 +321,55 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
             return price;
         }
 
-        // if the listing has expired, calculate the price based on the dutch auction
+        // if the listing has expired, calculate the price based on the Dutch auction
         if (block.timestamp - expiresAt < EXPIRED_DUTCH_AUCTION_DURATION) {
             unchecked {
-                price = floorPrice
-                    + (price - floorPrice)
-                        * (listing.created + listing.duration + EXPIRED_DUTCH_AUCTION_DURATION - block.timestamp)
-                        / EXPIRED_DUTCH_AUCTION_DURATION;
+                uint256 availableUntil = listing.created + listing.duration + EXPIRED_DUTCH_AUCTION_DURATION;
+                uint256 remainingPrice = price - floorPrice;
+                uint256 remainingTime = availableUntil - block.timestamp;
+                price += remainingPrice * remainingTime / EXPIRED_DUTCH_AUCTION_DURATION;
             }
         } else {
             price = floorPrice;
         }
     }
 
+    /**
+     * Returns the price of a listing.
+     *
+     * @param collection The collection of the listing
+     * @param tokenId The token ID of the listing
+     * @return The price of the listing
+     */
     function getListingPrice(address collection, uint256 tokenId) external view returns (uint256) {
         Listing memory listing = listings[collection][tokenId];
         return _getListingPrice(listing);
     }
 
+    /**
+     * Returns if the collection exists for supplied address.
+     */
     function isCollection(address collection) external view override returns (bool) {
         return collectionCreated[collection];
     }
 
+    /**
+     * Returns if the listing exists for the supplied collection and token ID.
+     */
     function isListing(address collection, uint256 tokenId) external view override returns (bool) {
         return listings[collection][tokenId].owner != address(0);
     }
 
+    /**
+     * Returns the owner of a listing.
+     */
     function ownerOf(address collection, uint256 tokenId) external view returns (address) {
         return listings[collection][tokenId].owner;
     }
 
+    /**
+     * Implement the ERC721 receiver interface to accept NFTs. Do nothing.
+     */
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
