@@ -8,10 +8,10 @@ import {CollectionToken} from "./CollectionToken.sol";
  */
 abstract contract TokenEscrow {
     // Emitted when a new deposit is made
-    event Deposited(address token, uint256 amount, address receiver);
+    event Deposited(address indexed token, uint256 amount, address receiver);
 
     // Emitted when a withdrawal is made
-    event Withdrawn(address caller, address token, uint256 amount, address recipient);
+    event Withdrawn(address indexed caller, address indexed token, uint256 amount, address indexed recipient);
 
     error InsufficientBalance();
 
