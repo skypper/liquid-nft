@@ -15,19 +15,19 @@ import {TokenEscrow} from "./TokenEscrow.sol";
  */
 contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, TokenEscrow {
     // Emitted when a new collection is created
-    event CollectionCreated(address collection, uint256[] tokenId, Listing listing);
+    event CollectionCreated(address indexed collection, uint256[] indexed tokenId, Listing listing);
 
     // Emitted when a new listing is created
-    event ListingCreated(address collection, uint256 tokenId, Listing listing);
+    event ListingCreated(address indexed collection, uint256 indexed tokenId, Listing listing);
 
     // Emitted when a listing is cancelled
-    event ListingCancelled(address collection, uint256 tokenId);
+    event ListingCancelled(address indexed collection, uint256 indexed tokenId);
 
     // Emitted when a listing is filled
-    event ListingFilled(address collection, uint256 tokenId, uint256 price);
+    event ListingFilled(address indexed collection, uint256 indexed tokenId, uint256 price);
 
     // Emitted when on a listing ownership transfer
-    event OwnershipTransferred(address collection, uint256 tokenId, address oldOwner, address newOwner);
+    event OwnershipTransferred(address indexed collection, uint256 indexed tokenId, address indexed oldOwner, address newOwner);
 
     // The minimum number of listings required to create a collection
     uint256 public constant BOOTSTRAP_LISTINGS = 4;
