@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {PoolManager} from "@uniswap/v4-core/src/PoolManager.sol";
+
 import {Test, console} from "forge-std/Test.sol";
 import {Listings} from "../src/Listings.sol";
 import {CollectionToken} from "../src/CollectionToken.sol";
 import {IListings} from "../src/interfaces/IListings.sol";
+import {UniswapV4Hook} from "../src/integrations/UniswapV4Hook.sol";
 
+import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {ERC721Mock} from "./mocks/ERC721Mock.sol";
 
 contract ListingsTest is Test {
+    UniswapV4Hook uniswapV4Hook;
+
     Listings listings;
 
     ERC721Mock nft1;
@@ -18,6 +24,9 @@ contract ListingsTest is Test {
 
     function setUp() public {
         listings = new Listings();
+
+        uniswapV4Hook = new UniswapV4Hook(listings, new ERC20Mock(), new PoolManager());
+        listings.setUniswapV4Hook(uniswapV4Hook);
 
         nft1 = new ERC721Mock();
         nft2 = new ERC721Mock();

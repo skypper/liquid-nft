@@ -9,6 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IListings} from "./interfaces/IListings.sol";
 import {CollectionToken} from "./CollectionToken.sol";
 import {TokenEscrow} from "./TokenEscrow.sol";
+import {UniswapV4Hook} from "./integrations/UniswapV4Hook.sol";
 
 /**
  * Handles the listings of the NFT marketplace: collection creation, listing creation, listing cancelation, listing filling, listing ownership transfer.
@@ -47,6 +48,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     uint256 public constant FEE_PERCENTAGE_PRECISION = 10_000;
     uint256 public feePercentage = 500; // 5%
 
+    UniswapV4Hook public uniswapV4Hook;
+
     // Stores all listings on record
     mapping(address collection => mapping(uint256 tokenId => Listing)) private listings;
 
@@ -68,6 +71,13 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
      * Creates a new instance of the Listings contract with the owner initialized as `msg.sender`.
      */
     constructor() Ownable(msg.sender) {}
+
+    /**
+     * Sets the Uniswap V4 hook contract address.
+     */
+    function setUniswapV4Hook(UniswapV4Hook _uniswapV4Hook) external onlyOwner {
+        uniswapV4Hook = _uniswapV4Hook;
+    }
 
     /**
      * Creates a new collection with the given token IDs and listing parameters.
