@@ -2,6 +2,8 @@
 pragma solidity ^0.8.26;
 
 import {PoolManager} from "@uniswap/v4-core/src/PoolManager.sol";
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import {HookMiner} from "v4-template/test/utils/HookMiner.sol";
 
 import {Test, console} from "forge-std/Test.sol";
 import {Listings} from "../src/Listings.sol";
@@ -12,10 +14,16 @@ import {UniswapV4Hook} from "../src/integrations/UniswapV4Hook.sol";
 import {ERC20Mock} from "./mocks/ERC20Mock.sol";
 import {ERC721Mock} from "./mocks/ERC721Mock.sol";
 
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+
 contract ListingsTest is Test {
+    Listings listings;
+
     UniswapV4Hook uniswapV4Hook;
 
-    Listings listings;
+    ERC20Mock nativeToken;
+    PoolManager poolManager;
 
     ERC721Mock nft1;
     ERC721Mock nft2;
@@ -25,7 +33,26 @@ contract ListingsTest is Test {
     function setUp() public {
         listings = new Listings();
 
-        uniswapV4Hook = new UniswapV4Hook(listings, new ERC20Mock(), new PoolManager());
+        poolManager = new PoolManager();
+        nativeToken = new ERC20Mock();
+
+        address deployer = makeAddr("deployer");
+
+        // hook contracts must have specific flags encoded in the address
+        uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG);
+
+        bytes memory constructorArgs = abi.encode(listings, nativeToken, poolManager);
+        (address hookAddress, bytes32 salt) =
+            HookMiner.find(deployer, flags, type(UniswapV4Hook).creationCode, constructorArgs);
+
+        vm.startPrank(deployer);
+
+        uniswapV4Hook =
+            new UniswapV4Hook{salt: salt}(IListings(listings), IERC20(nativeToken), IPoolManager(poolManager));
+        require(address(uniswapV4Hook) == hookAddress, "Hook address mismatch");
+
+        vm.stopPrank();
+
         listings.setUniswapV4Hook(uniswapV4Hook);
 
         nft1 = new ERC721Mock();
