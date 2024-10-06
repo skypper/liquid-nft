@@ -18,6 +18,7 @@ contract UniswapV4Hook is BaseHook {
 
     IListings public listings;
     IERC20 public nativeToken;
+
     struct Pool {
         PoolKey key;
         uint256 tokenId;
@@ -34,13 +35,13 @@ contract UniswapV4Hook is BaseHook {
         require(msg.sender == address(listings), CallerIsNotListings());
         _;
     }
-    
+
     function registerCollection() external onlyListings {
-        throw "Unimplemented";
+        revert("Unimplemented");
     }
 
     function initializeCollection() external onlyListings {
-        throw "Unimplemented";
+        revert("Unimplemented");
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
