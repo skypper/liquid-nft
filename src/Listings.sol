@@ -379,6 +379,13 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     }
 
     /**
+     * Returns the address of the collection token for the supplied collection.
+     */
+    function getCollectionToken(address collection) external view returns (address) {
+        return collectionTokens[collection];
+    }
+
+    /**
      * Implement the ERC721 receiver interface to accept NFTs. Do nothing.
      */
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {

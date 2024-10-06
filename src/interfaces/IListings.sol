@@ -58,4 +58,6 @@ interface IListings {
     function isCollection(address collection) external view returns (bool);
 
     function isListing(address collection, uint256 tokenId) external view returns (bool);
+
+    function getCollectionToken(address collection) external view returns (address);
 }
