@@ -118,6 +118,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
             new CollectionToken(_createCollection.name, _createCollection.symbol, address(this));
         collectionTokens[_createCollection.collection] = address(collectionToken);
 
+        uniswapV4Hook.registerCollection(_createCollection.collection);
+
         uint256 tokensReceived = tokenIdsCount * 1 ether;
         if (tokensReceived < listingTaxes) {
             revert TaxOverflow();
