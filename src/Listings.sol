@@ -327,21 +327,20 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
 
         uint256 expiresAt = listing.created + listing.duration;
         // if the listing is still active return the price as is
-        if (block.timestamp <= expiresAt) {
+        if (block.timestamp < expiresAt) {
             return price;
         }
 
+        uint256 unavailableAt = expiresAt + EXPIRED_DUTCH_AUCTION_DURATION;
         // if the listing has expired, calculate the price based on the Dutch auction
-        if (block.timestamp - expiresAt < EXPIRED_DUTCH_AUCTION_DURATION) {
+        if (block.timestamp < unavailableAt) {
             unchecked {
-                uint256 availableUntil = listing.created + listing.duration + EXPIRED_DUTCH_AUCTION_DURATION;
                 uint256 remainingPrice = price - floorPrice;
-                uint256 remainingTime = availableUntil - block.timestamp;
-                price += remainingPrice * remainingTime / EXPIRED_DUTCH_AUCTION_DURATION;
+                uint256 remainingTime = unavailableAt - block.timestamp;
+                return floorPrice + remainingPrice * remainingTime / EXPIRED_DUTCH_AUCTION_DURATION;
             }
-        } else {
-            price = floorPrice;
         }
+        return floorPrice;
     }
 
     /**
