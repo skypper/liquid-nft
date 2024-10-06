@@ -35,7 +35,7 @@ interface IListings {
     }
 
     error NotImplemented();
-    error CollectionNotExists();
+    error CollectionExistsAlready();
     error NotEnoughNFTs();
     error NoOwner();
     error DurationTooShort();

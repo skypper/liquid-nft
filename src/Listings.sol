@@ -87,7 +87,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
      * @param _createCollection The parameters for the collection creation
      */
     function createCollection(CreateCollection calldata _createCollection) external override nonReentrant {
-        require(!collectionCreated[_createCollection.collection], CollectionNotExists());
+        require(!collectionCreated[_createCollection.collection], CollectionExistsAlready());
 
         require(_createCollection.tokenIds.length >= BOOTSTRAP_LISTINGS, NotEnoughNFTs());
 
