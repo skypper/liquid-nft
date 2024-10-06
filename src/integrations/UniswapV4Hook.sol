@@ -5,6 +5,8 @@ import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
 import {Hooks} from "v4-periphery/lib/v4-core/src/libraries/Hooks.sol";
 import {BalanceDelta} from "v4-periphery/lib/v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta} from "v4-periphery/lib/v4-core/src/types/BeforeSwapDelta.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
@@ -12,19 +14,34 @@ import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 import {IListings} from "../interfaces/IListings.sol";
+import {CollectionToken} from "../CollectionToken.sol";
 
 contract UniswapV4Hook is BaseHook {
+    using PoolIdLibrary for PoolKey;
+
     error CallerIsNotListings();
 
     IListings public listings;
     IERC20 public nativeToken;
 
-    struct Pool {
+    // default pool parameters
+    uint24 constant DEFAULT_POOL_FEE = 3000; // 0.3%
+    int24 constant DEFAULT_POOL_TICK_SPACING = 60;
+
+    // only pool owner can change the pool fee
+    struct PoolInfo {
         PoolKey key;
-        uint256 tokenId;
-        uint256 tokenIdsCount;
-        address receiver;
+        bool currencyFlipped;
+        bool initialized;
+        uint256 poolFee;
     }
+
+    // Holds the pool key for a collection
+    mapping(address collection => PoolKey) public poolKeys;
+
+    // Holds the pool info for a pool
+    // @dev poolId is the key and is obtained from `PoolKey`
+    mapping(PoolId => PoolInfo) public poolInfos;
 
     constructor(IListings _listings, IERC20 _nativeToken, IPoolManager _poolManager) BaseHook(_poolManager) {
         listings = _listings;
@@ -36,8 +53,23 @@ contract UniswapV4Hook is BaseHook {
         _;
     }
 
-    function registerCollection() external onlyListings {
-        revert("Unimplemented");
+    function registerCollection(address collection) external onlyListings {
+        require(poolKeys[collection].fee == 0, "Collection already registered");
+
+        address collectionToken = listings.getCollectionToken(collection);
+
+        bool currencyFlipped = address(nativeToken) > collectionToken;
+        PoolKey memory poolKey = PoolKey({
+            currency0: currencyFlipped ? Currency.wrap(collectionToken) : Currency.wrap(address(nativeToken)),
+            currency1: currencyFlipped ? Currency.wrap(address(nativeToken)) : Currency.wrap(collectionToken),
+            fee: DEFAULT_POOL_FEE,
+            tickSpacing: 60,
+            hooks: IHooks(address(this))
+        });
+        poolKeys[collection] = poolKey;
+
+        poolInfos[poolKey.toId()] =
+            PoolInfo({key: poolKey, currencyFlipped: currencyFlipped, initialized: false, poolFee: 0});
     }
 
     function initializeCollection() external onlyListings {
