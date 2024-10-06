@@ -28,7 +28,9 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     event ListingFilled(address indexed collection, uint256 indexed tokenId, uint256 price);
 
     // Emitted when on a listing ownership transfer
-    event OwnershipTransferred(address indexed collection, uint256 indexed tokenId, address indexed oldOwner, address newOwner);
+    event OwnershipTransferred(
+        address indexed collection, uint256 indexed tokenId, address indexed oldOwner, address newOwner
+    );
 
     // The minimum number of listings required to create a collection
     uint256 public constant BOOTSTRAP_LISTINGS = 4;
