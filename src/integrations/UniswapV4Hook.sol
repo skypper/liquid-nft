@@ -12,12 +12,16 @@ import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {CurrencySettler} from "@uniswap/v4-core/test/utils/CurrencySettler.sol";
 
 import {IListings} from "../interfaces/IListings.sol";
 import {CollectionToken} from "../CollectionToken.sol";
 
+import {console} from "forge-std/Test.sol";
+
 contract UniswapV4Hook is BaseHook {
     using PoolIdLibrary for PoolKey;
+    using CurrencySettler for Currency;
 
     error CallerIsNotListings();
 
@@ -72,8 +76,28 @@ contract UniswapV4Hook is BaseHook {
             PoolInfo({key: poolKey, currencyFlipped: currencyFlipped, initialized: false, poolFee: 0});
     }
 
-    function initializeCollection() external onlyListings {
-        revert("Unimplemented");
+    function initializeCollection(address collection, uint256 tokenId, uint160 sqrtPriceX96) external onlyListings {
+        PoolKey memory poolKey = poolKeys[collection];
+        PoolInfo storage poolInfo = poolInfos[poolKey.toId()];
+
+        // require(!listings.isCollection(collection), "Collection not registered");
+        require(poolInfo.initialized == false, "Collection already initialized");
+
+        address collectionToken = listings.getCollectionToken(collection);
+
+        poolManager.initialize(poolKey, sqrtPriceX96, "");
+        
+        poolManager.unlock(abi.encodeWithSelector(UniswapV4Hook.addLiquidity.selector));
+
+        poolInfo.initialized = true;
+    }
+
+    function addLiquidity(address collection) external {
+        console.log("XX add liquidity", collection);
+
+        Currency.wrap(address(nativeToken)).settle(poolManager, msg.sender, 1 ether, false);
+        Currency.wrap(address(listings.getCollectionToken(collection))).take(poolManager, msg.sender, 1 ether, false);
+
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {

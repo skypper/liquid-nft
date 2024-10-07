@@ -279,4 +279,17 @@ contract ListingsTest is Test {
         listings.transferOwnership(collection, tokenId, newOwner);
         assertTrue(listings.ownerOf(address(nft1), tokenId) == newOwner);
     }
+
+    function test_addLiquidity(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+
+        address user = makeAddr("user");
+
+        _createCollection(tokenId, tokenIdsCount, user);
+
+        deal(address(uniswapV4Hook.nativeToken()), address(uniswapV4Hook), 1 ether);
+        vm.prank(address(listings));
+        uniswapV4Hook.initializeCollection(address(nft1), tokenId, 4295128739);
+    }
 }
