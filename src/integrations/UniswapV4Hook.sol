@@ -87,7 +87,7 @@ contract UniswapV4Hook is BaseHook {
 
         poolManager.initialize(poolKey, sqrtPriceX96, "");
         
-        poolManager.unlock(abi.encodeWithSelector(UniswapV4Hook.addLiquidity.selector));
+        poolManager.unlock(abi.encodeCall(UniswapV4Hook.addLiquidity, (collection)));
 
         poolInfo.initialized = true;
     }
