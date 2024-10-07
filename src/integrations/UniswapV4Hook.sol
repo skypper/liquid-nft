@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
 import {Hooks} from "v4-periphery/lib/v4-core/src/libraries/Hooks.sol";
-import {BalanceDelta} from "v4-periphery/lib/v4-core/src/types/BalanceDelta.sol";
+import {BalanceDelta, toBalanceDelta} from "v4-periphery/lib/v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta} from "v4-periphery/lib/v4-core/src/types/BeforeSwapDelta.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
@@ -92,12 +92,12 @@ contract UniswapV4Hook is BaseHook {
         poolInfo.initialized = true;
     }
 
-    function addLiquidity(address collection) external {
+    function addLiquidity(address collection) external returns (bytes memory) {
         console.log("XX add liquidity", collection);
 
         Currency.wrap(address(nativeToken)).settle(poolManager, msg.sender, 1 ether, false);
-        Currency.wrap(address(listings.getCollectionToken(collection))).take(poolManager, msg.sender, 1 ether, false);
-
+        Currency.wrap(address(listings.getCollectionToken(collection))).settle(poolManager, msg.sender, 1 ether, false);
+        return abi.encode(toBalanceDelta(1 ether, 1 ether));
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
