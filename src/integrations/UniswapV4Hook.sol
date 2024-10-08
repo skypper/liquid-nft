@@ -13,6 +13,10 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {CurrencySettler} from "@uniswap/v4-core/test/utils/CurrencySettler.sol";
+import {TickMath} from "v4-periphery/lib/v4-core/src/libraries/TickMath.sol";
+import {SafeCast} from "v4-periphery/lib/v4-core/src/libraries/SafeCast.sol";
+import {LiquidityAmounts} from "@uniswap/v4-core/test/utils/LiquidityAmounts.sol";
+import {console} from "forge-std/Test.sol";
 
 import {IListings} from "../interfaces/IListings.sol";
 import {CollectionToken} from "../CollectionToken.sol";
@@ -22,8 +26,10 @@ import {console} from "forge-std/Test.sol";
 contract UniswapV4Hook is BaseHook {
     using PoolIdLibrary for PoolKey;
     using CurrencySettler for Currency;
+    using SafeCast for *;
 
     error CallerIsNotListings();
+    error CollectionAlreadyInitialized();
 
     IListings public listings;
     IERC20 public nativeToken;
@@ -76,27 +82,56 @@ contract UniswapV4Hook is BaseHook {
             PoolInfo({key: poolKey, currencyFlipped: currencyFlipped, initialized: false, poolFee: 0});
     }
 
-    function initializeCollection(address collection, uint256 tokenId, uint160 sqrtPriceX96) external onlyListings {
+    function initializeCollection(address collection, uint160 sqrtPriceX96, uint256 amount0, uint256 amount1)
+        external
+        onlyListings
+    {
         PoolKey memory poolKey = poolKeys[collection];
+        require(listings.isCollection(collection), IListings.CollectionNotExists());
+
         PoolInfo storage poolInfo = poolInfos[poolKey.toId()];
-
-        // require(!listings.isCollection(collection), "Collection not registered");
-        require(poolInfo.initialized == false, "Collection already initialized");
-
-        address collectionToken = listings.getCollectionToken(collection);
+        require(poolInfo.initialized == false, CollectionAlreadyInitialized());
 
         poolManager.initialize(poolKey, sqrtPriceX96, "");
-        
-        poolManager.unlock(abi.encodeCall(UniswapV4Hook.addLiquidity, (collection)));
+
+        poolManager.unlock(abi.encodeCall(UniswapV4Hook.addLiquidity, (poolKey, sqrtPriceX96, amount0, amount1)));
 
         poolInfo.initialized = true;
     }
 
-    function addLiquidity(address collection) external returns (bytes memory) {
-        console.log("XX add liquidity", collection);
+    function addLiquidity(PoolKey memory poolKey, uint160 sqrtPriceX96, uint256 amount0, uint256 amount1)
+        external
+        returns (bytes memory)
+    {
+        int24 lowerTick = TickMath.minUsableTick(DEFAULT_POOL_TICK_SPACING);
+        int24 upperTick = TickMath.maxUsableTick(DEFAULT_POOL_TICK_SPACING);
+        uint160 sqrtPriceAX96 = TickMath.getSqrtPriceAtTick(lowerTick);
+        uint160 sqrtPriceBX96 = TickMath.getSqrtPriceAtTick(upperTick);
+        uint128 liquidityToAdd = LiquidityAmounts.getLiquidityForAmounts({
+            sqrtPriceX96: sqrtPriceX96,
+            sqrtPriceAX96: sqrtPriceAX96,
+            sqrtPriceBX96: sqrtPriceBX96,
+            amount0: amount0,
+            amount1: amount1
+        });
 
-        Currency.wrap(address(nativeToken)).settle(poolManager, msg.sender, 1 ether, false);
-        Currency.wrap(address(listings.getCollectionToken(collection))).settle(poolManager, msg.sender, 1 ether, false);
+        (BalanceDelta delta,) = poolManager.modifyLiquidity(
+            poolKey,
+            IPoolManager.ModifyLiquidityParams({
+                tickLower: lowerTick,
+                tickUpper: upperTick,
+                liquidityDelta: liquidityToAdd.toInt256(),
+                salt: ""
+            }),
+            ""
+        );
+
+        if (delta.amount0() < 0) {
+            poolKey.currency0.settle(poolManager, msg.sender, uint128(-delta.amount0()), false);
+        }
+        if (delta.amount1() < 0) {
+            poolKey.currency1.settle(poolManager, msg.sender, uint128(-delta.amount1()), false);
+        }
         return abi.encode(toBalanceDelta(1 ether, 1 ether));
     }
 
@@ -119,7 +154,12 @@ contract UniswapV4Hook is BaseHook {
         });
     }
 
-    function beforeInitialize(address, PoolKey calldata, uint160, bytes calldata) external override returns (bytes4) {
+    function beforeInitialize(address, PoolKey calldata, uint160, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         return this.beforeInitialize.selector;
     }
 }

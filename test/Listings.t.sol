@@ -288,9 +288,11 @@ contract ListingsTest is Test {
 
         _createCollection(tokenId, tokenIdsCount, user);
 
-        deal(address(uniswapV4Hook.nativeToken()), address(uniswapV4Hook), 1 ether);
-        deal(address(listings.getCollectionToken(address(nft1))), address(uniswapV4Hook), 1 ether);
+        address collectionToken = listings.getCollectionToken(address(nft1));
+        deal(address(nativeToken), address(uniswapV4Hook), 1 ether);
+        deal(collectionToken, address(uniswapV4Hook), 1 ether);
+
         vm.prank(address(listings));
-        uniswapV4Hook.initializeCollection(address(nft1), tokenId, 4295128739);
+        uniswapV4Hook.initializeCollection(address(nft1), 45765206694984738996961730 / 60 * 60, 1 ether, 1 ether);
     }
 }
