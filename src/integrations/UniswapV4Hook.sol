@@ -37,6 +37,7 @@ contract UniswapV4Hook is BaseHook {
     // default pool parameters
     uint24 constant DEFAULT_POOL_FEE = 3000; // 0.3%
     int24 constant DEFAULT_POOL_TICK_SPACING = 60;
+    uint256 constant MINIMUM_DONATE_AMOUNT = 0.0001 ether;
 
     // only pool owner can change the pool fee
     struct PoolInfo {
@@ -154,6 +155,30 @@ contract UniswapV4Hook is BaseHook {
         PoolId poolId = poolKeys[collection].toId();
         poolFees[poolId].amount0 += amount0;
         poolFees[poolId].amount1 += amount1;
+    }
+
+    function _distributeFees(PoolKey memory poolKey) internal {
+        PoolId poolId = poolKey.toId();
+        PoolInfo memory poolInfo = poolInfos[poolId];
+        AccruedFees storage accruedFees = poolFees[poolId];
+
+        uint256 accruedNativeTokens = accruedFees.amount0;
+        accruedFees.amount0 = 0;
+
+        if (accruedNativeTokens < MINIMUM_DONATE_AMOUNT) {
+            return;
+        }
+
+        (uint256 amount0, uint256 amount1) =
+            poolInfo.currencyFlipped ? (uint256(0), accruedNativeTokens) : (accruedNativeTokens, uint256(0));
+        BalanceDelta delta = poolManager.donate(poolKey, amount0, amount1, "");
+
+        if (delta.amount0() < 0) {
+            poolKey.currency0.settle(poolManager, address(this), uint128(-delta.amount0()), false);
+        }
+        if (delta.amount1() < 0) {
+            poolKey.currency1.settle(poolManager, address(this), uint128(-delta.amount1()), false);
+        }
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
