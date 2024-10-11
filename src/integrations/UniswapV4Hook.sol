@@ -201,6 +201,17 @@ contract UniswapV4Hook is BaseHook {
         }
     }
 
+    function afterSwap(
+        address,
+        PoolKey calldata poolKey,
+        IPoolManager.SwapParams calldata,
+        BalanceDelta,
+        bytes calldata
+    ) external override returns (bytes4, int128) {
+        _distributeFees(poolKey);
+        return (this.afterSwap.selector, 0);
+    }
+
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
             beforeInitialize: true,
@@ -210,7 +221,7 @@ contract UniswapV4Hook is BaseHook {
             beforeRemoveLiquidity: true,
             afterRemoveLiquidity: false,
             beforeSwap: false,
-            afterSwap: false,
+            afterSwap: true,
             beforeDonate: false,
             afterDonate: false,
             beforeSwapReturnDelta: false,
