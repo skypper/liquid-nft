@@ -186,6 +186,17 @@ contract UniswapV4Hook is BaseHook {
         return this.beforeRemoveLiquidity.selector;
     }
 
+    function afterSwap(
+        address,
+        PoolKey calldata poolKey,
+        IPoolManager.SwapParams calldata,
+        BalanceDelta,
+        bytes calldata
+    ) external override returns (bytes4, int128) {
+        _distributeFees(poolKey);
+        return (this.afterSwap.selector, 0);
+    }
+
     function _distributeFees(PoolKey memory poolKey) internal {
         PoolId poolId = poolKey.toId();
         PoolInfo memory poolInfo = poolInfos[poolId];
@@ -208,17 +219,6 @@ contract UniswapV4Hook is BaseHook {
         if (delta.amount1() < 0) {
             poolKey.currency1.settle(poolManager, address(this), uint128(-delta.amount1()), false);
         }
-    }
-
-    function afterSwap(
-        address,
-        PoolKey calldata poolKey,
-        IPoolManager.SwapParams calldata,
-        BalanceDelta,
-        bytes calldata
-    ) external override returns (bytes4, int128) {
-        _distributeFees(poolKey);
-        return (this.afterSwap.selector, 0);
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
