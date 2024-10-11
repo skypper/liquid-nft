@@ -157,6 +157,26 @@ contract UniswapV4Hook is BaseHook {
         poolFees[poolId].amount1 += amount1;
     }
 
+    function beforeAddLiquidity(
+        address,
+        PoolKey calldata poolKey,
+        IPoolManager.ModifyLiquidityParams calldata,
+        bytes calldata
+    ) external override returns (bytes4) {
+        _distributeFees(poolKey);
+        return this.beforeAddLiquidity.selector;
+    }
+
+    function beforeRemoveLiquidity(
+        address,
+        PoolKey calldata poolKey,
+        IPoolManager.ModifyLiquidityParams calldata,
+        bytes calldata
+    ) external override returns (bytes4) {
+        _distributeFees(poolKey);
+        return this.beforeRemoveLiquidity.selector;
+    }
+
     function _distributeFees(PoolKey memory poolKey) internal {
         PoolId poolId = poolKey.toId();
         PoolInfo memory poolInfo = poolInfos[poolId];
@@ -185,9 +205,9 @@ contract UniswapV4Hook is BaseHook {
         return Hooks.Permissions({
             beforeInitialize: true,
             afterInitialize: false,
-            beforeAddLiquidity: false,
+            beforeAddLiquidity: true,
             afterAddLiquidity: false,
-            beforeRemoveLiquidity: false,
+            beforeRemoveLiquidity: true,
             afterRemoveLiquidity: false,
             beforeSwap: false,
             afterSwap: false,
