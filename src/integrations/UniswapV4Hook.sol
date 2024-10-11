@@ -49,6 +49,13 @@ contract UniswapV4Hook is BaseHook {
     // Holds the pool key for a collection
     mapping(address collection => PoolKey) public poolKeys;
 
+    struct AccruedFees {
+        uint256 amount0;
+        uint256 amount1;
+    }
+
+    mapping(address collection => AccruedFees) public poolFees;
+
     // Holds the pool info for a pool
     // @dev poolId is the key and is obtained from `PoolKey`
     mapping(PoolId => PoolInfo) public poolInfos;
@@ -133,6 +140,13 @@ contract UniswapV4Hook is BaseHook {
             poolKey.currency1.settle(poolManager, msg.sender, uint128(-delta.amount1()), false);
         }
         return abi.encode(toBalanceDelta(1 ether, 1 ether));
+    }
+
+    function depositFees(address collection, uint256 amount0, uint256 amount1) external onlyListings {
+        IERC20(nativeToken).transferFrom(msg.sender, address(this), amount0);
+
+        address collectionToken = listings.getCollectionToken(collection);
+        CollectionToken(collectionToken).transferFrom(msg.sender, address(this), amount1);
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
