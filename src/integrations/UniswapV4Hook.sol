@@ -157,6 +157,15 @@ contract UniswapV4Hook is BaseHook {
         poolFees[poolId].amount1 += amount1;
     }
 
+    function beforeInitialize(address, PoolKey calldata, uint160, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
+        return this.beforeInitialize.selector;
+    }
+
     function beforeAddLiquidity(
         address,
         PoolKey calldata poolKey,
@@ -229,14 +238,5 @@ contract UniswapV4Hook is BaseHook {
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
         });
-    }
-
-    function beforeInitialize(address, PoolKey calldata, uint160, bytes calldata)
-        external
-        pure
-        override
-        returns (bytes4)
-    {
-        return this.beforeInitialize.selector;
     }
 }
