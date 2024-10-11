@@ -50,7 +50,9 @@ contract UniswapV4Hook is BaseHook {
     mapping(address collection => PoolKey) public poolKeys;
 
     struct AccruedFees {
+        // denominates native tokens
         uint256 amount0;
+        // denominates collection token always
         uint256 amount1;
     }
 
