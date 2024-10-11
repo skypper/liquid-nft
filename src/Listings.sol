@@ -129,6 +129,10 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         }
         collectionToken.mint(msg.sender, tokensReceived);
 
+        collectionToken.mint(address(this), listingTaxes);
+        collectionToken.approve(address(uniswapV4Hook), listingTaxes);
+        uniswapV4Hook.depositFees(_createCollection.collection, 0, listingTaxes);
+
         emit CollectionCreated(_createCollection.collection, _createCollection.tokenIds, _createCollection.listing);
     }
 
@@ -167,6 +171,10 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         }
         address collectionToken = collectionTokens[_createListing.collection];
         CollectionToken(collectionToken).mint(listing_.owner, 1 ether);
+
+        CollectionToken(collectionToken).mint(address(this), listingTax);
+        CollectionToken(collectionToken).approve(address(uniswapV4Hook), listingTax);
+        uniswapV4Hook.depositFees(_createListing.collection, 0, listingTax);
 
         emit ListingCreated(_createListing.collection, _createListing.tokenId, _createListing.listing);
     }
