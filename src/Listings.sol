@@ -49,6 +49,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     // Parameters for listing fee
     uint256 public constant FEE_PERCENTAGE_PRECISION = 10_000;
     uint256 public feePercentage = 500; // 5%
+    uint256 public feeBeneficiarySplit = 5000; // 50% of the fees go to the fee beneficiary
 
     // The address of the account that receives the fees for the listings (filling, cancelling etc)
     address public feeBeneficiary;
@@ -198,6 +199,18 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     }
 
     /**
+     * Returns the fee split between the fee beneficiary and the LP (liquidity providers).
+     *
+     * @param fee The total fee to split
+     * @return feeBeneficiaryPart The fee beneficiary's part
+     * @return feeLPPart The LP's part
+     */
+    function _feeSplit(uint256 fee) internal view returns (uint256 feeBeneficiaryPart, uint256 feeLPPart) {
+        feeBeneficiaryPart = fee * feeBeneficiarySplit / FEE_PERCENTAGE_PRECISION;
+        feeLPPart = fee - feeBeneficiaryPart;
+    }
+
+    /**
      * Cancels a listing for the given collection and token ID.
      *
      * @param _cancelListing The parameters for the listing cancellation
@@ -222,8 +235,14 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         uint256 tokensOwed = 1 ether - refund;
 
         CollectionToken(collectionToken).burn(msg.sender, tokensOwed);
+
+        // settle the fees
+        (uint256 feeBeneficiaryPart, uint256 feeLPPart) = _feeSplit(collectedTax);
         // store the collected tax in escrow to be paid to the fee beneficiary
-        _deposit(collectionToken, collectedTax, feeBeneficiary);
+        _deposit(collectionToken, feeBeneficiaryPart, feeBeneficiary);
+        // deposit the LP part of the fee to the Uniswap V3 hook
+        CollectionToken(collectionToken).approve(address(uniswapV4Hook), feeLPPart);
+        uniswapV4Hook.depositFees(_cancelListing.collection, 0, feeLPPart);
 
         IERC721(_cancelListing.collection).safeTransferFrom(
             address(this), _cancelListing.receiver, _cancelListing.tokenId
@@ -251,7 +270,7 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         require(isAvailable, ListingExpired());
 
         (uint256 listingTax, uint256 refund) = _resolveListingTax(listing);
-        uint256 taxCollected = listingTax - refund;
+        uint256 collectedTax = listingTax - refund;
 
         address collectionToken = collectionTokens[_fillListing.collection];
 
@@ -267,7 +286,12 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         CollectionToken(collectionToken).transfer(listing.owner, ownerOwed);
 
         // hold in escrow the tax to be paid to the fee beneficiary (excluding the refund)
-        _deposit(collectionToken, taxCollected, feeBeneficiary);
+        (uint256 feeBeneficiaryPart, uint256 feeLPPart) = _feeSplit(collectedTax);
+        // store the collected tax in escrow to be paid to the fee beneficiary
+        _deposit(collectionToken, feeBeneficiaryPart, feeBeneficiary);
+        // deposit the LP part of the fee to the Uniswap V3 hook
+        CollectionToken(collectionToken).approve(address(uniswapV4Hook), feeLPPart);
+        uniswapV4Hook.depositFees(_fillListing.collection, 0, feeLPPart);
 
         // hold in escrow the difference upwards from the floor price to the listing's owner
         _deposit(collectionToken, ownerOwed + refund, listing.owner);
