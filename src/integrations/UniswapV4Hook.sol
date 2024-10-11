@@ -56,7 +56,8 @@ contract UniswapV4Hook is BaseHook {
         uint256 amount1;
     }
 
-    mapping(address collection => AccruedFees) public poolFees;
+    // Holds the accrued fees for a pool
+    mapping(PoolId => AccruedFees) public poolFees;
 
     // Holds the pool info for a pool
     // @dev poolId is the key and is obtained from `PoolKey`
@@ -149,6 +150,10 @@ contract UniswapV4Hook is BaseHook {
 
         address collectionToken = listings.getCollectionToken(collection);
         CollectionToken(collectionToken).transferFrom(msg.sender, address(this), amount1);
+
+        PoolId poolId = poolKeys[collection].toId();
+        poolFees[poolId].amount0 += amount0;
+        poolFees[poolId].amount1 += amount1;
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
