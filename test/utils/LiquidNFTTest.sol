@@ -37,7 +37,10 @@ contract LiquidNFTTest is Test {
         address deployer = makeAddr("deployer");
 
         // hook contracts must have specific flags encoded in the address
-        uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG);
+        uint160 flags = uint160(
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
+                | Hooks.AFTER_SWAP_FLAG
+        );
 
         bytes memory constructorArgs = abi.encode(listings, nativeToken, poolManager);
         (address hookAddress, bytes32 salt) =
