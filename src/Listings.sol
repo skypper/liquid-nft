@@ -50,6 +50,9 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     uint256 public constant FEE_PERCENTAGE_PRECISION = 10_000;
     uint256 public feePercentage = 500; // 5%
 
+    // The address of the account that receives the fees for the listings (filling, cancelling etc)
+    address public feeBeneficiary;
+
     UniswapV4Hook public uniswapV4Hook;
 
     // Stores all listings on record
@@ -72,7 +75,9 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
     /**
      * Creates a new instance of the Listings contract with the owner initialized as `msg.sender`.
      */
-    constructor() Ownable(msg.sender) {}
+    constructor() Ownable(msg.sender) {
+        feeBeneficiary = msg.sender;
+    }
 
     /**
      * Sets the Uniswap V4 hook contract address.
@@ -217,8 +222,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         uint256 tokensOwed = 1 ether - refund;
 
         CollectionToken(collectionToken).burn(msg.sender, tokensOwed);
-        // store the collected tax in escrow to be paid to the contract owner
-        _deposit(collectionToken, collectedTax, owner());
+        // store the collected tax in escrow to be paid to the fee beneficiary
+        _deposit(collectionToken, collectedTax, feeBeneficiary);
 
         IERC721(_cancelListing.collection).safeTransferFrom(
             address(this), _cancelListing.receiver, _cancelListing.tokenId
@@ -261,8 +266,8 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         // transfer the rest of the price to the listing's owner (excluding the floor price which owner immediately received on listing creation)
         CollectionToken(collectionToken).transfer(listing.owner, ownerOwed);
 
-        // hold in escrow the tax to be paid to the contract owner (excluding the refund)
-        _deposit(collectionToken, taxCollected, owner());
+        // hold in escrow the tax to be paid to the fee beneficiary (excluding the refund)
+        _deposit(collectionToken, taxCollected, feeBeneficiary);
 
         // hold in escrow the difference upwards from the floor price to the listing's owner
         _deposit(collectionToken, ownerOwed + refund, listing.owner);
@@ -393,6 +398,15 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
      */
     function getCollectionToken(address collection) external view returns (address) {
         return collectionTokens[collection];
+    }
+
+    /**
+     * Sets the fee percentage for the listings.
+     *
+     * @param _feeBeneficiary The new fee beneficiary to set
+     */
+    function setBeneficiary(address _feeBeneficiary) external onlyOwner {
+        feeBeneficiary = _feeBeneficiary;
     }
 
     /**
