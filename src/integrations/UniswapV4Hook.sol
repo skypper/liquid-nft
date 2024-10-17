@@ -105,6 +105,11 @@ contract UniswapV4Hook is BaseHook {
 
         poolManager.initialize(poolKey, sqrtPriceX96, "");
 
+        nativeToken.transferFrom(msg.sender, address(this), amount0);
+
+        address collectionToken = listings.getCollectionToken(collection);
+        CollectionToken(collectionToken).transferFrom(msg.sender, address(this), amount1);
+
         poolManager.unlock(abi.encodeCall(UniswapV4Hook.addLiquidity, (poolKey, sqrtPriceX96, amount0, amount1)));
 
         poolInfo.initialized = true;
