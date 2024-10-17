@@ -6,6 +6,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {WETH} from "@solady/tokens/WETH.sol";
 
 import {IListings} from "./interfaces/IListings.sol";
 import {CollectionToken} from "./CollectionToken.sol";
@@ -193,6 +194,29 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         collectionExists(_initializeCollection.collection)
     {
         require(msg.value == _initializeCollection.amount0);
+
+        // Wrap the native coin (i.e. ether) to the token (i.e. WETH)
+        WETH(payable(address(uniswapV4Hook.nativeToken()))).deposit{value: msg.value}();
+
+        // transfer the collection token to the contract
+        address collectionToken = collectionTokens[_initializeCollection.collection];
+        CollectionToken(collectionToken).transferFrom(msg.sender, address(this), _initializeCollection.amount1);
+        CollectionToken(collectionToken).approve(address(uniswapV4Hook), _initializeCollection.amount1);
+
+        // call the hook to initialize the pool and initial provide liquidity
+        uniswapV4Hook.initializeCollection(
+            _initializeCollection.collection,
+            _initializeCollection.sqrtPriceX96,
+            _initializeCollection.amount0,
+            _initializeCollection.amount1
+        );
+
+        emit CollectionInitialized(
+            _initializeCollection.collection,
+            _initializeCollection.sqrtPriceX96,
+            _initializeCollection.amount0,
+            _initializeCollection.amount1
+        );
     }
 
     /**
