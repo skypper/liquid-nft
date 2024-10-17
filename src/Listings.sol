@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -17,6 +18,9 @@ import {UniswapV4Hook} from "./integrations/UniswapV4Hook.sol";
 contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, TokenEscrow {
     // Emitted when a new collection is created
     event CollectionCreated(address indexed collection, uint256[] indexed tokenId, Listing listing);
+
+    // Emitted when a new collection is initialized
+    event CollectionInitialized(address indexed collection, uint160 sqrtPriceX96, uint256 amount0, uint256 amount1);
 
     // Emitted when a new listing is created
     event ListingCreated(address indexed collection, uint256 indexed tokenId, Listing listing);
@@ -140,6 +144,55 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         uniswapV4Hook.depositFees(_createCollection.collection, 0, listingTaxes);
 
         emit CollectionCreated(_createCollection.collection, _createCollection.tokenIds, _createCollection.listing);
+    }
+
+    /**
+     * Initializes a collection by creating a liquidity pool on Uniswap V4 and
+     * providing initial liquidity of a with the given amount of native tokens (i.e. amount0) and
+     * collection tokens (i.e. amount1).
+     *
+     * @param _initializeCollection The parameters for the collection initialization
+     */
+    function initializeCollection(InitializeCollection calldata _initializeCollection)
+        external
+        override
+        nonReentrant
+        collectionExists(_initializeCollection.collection)
+    {
+        // transfer the native tokens to the contract
+        IERC20 nativeToken = uniswapV4Hook.nativeToken();
+        nativeToken.transferFrom(msg.sender, address(this), _initializeCollection.amount0);
+        nativeToken.approve(address(uniswapV4Hook), _initializeCollection.amount0);
+
+        // transfer the collection token to the contract
+        address collectionToken = collectionTokens[_initializeCollection.collection];
+        CollectionToken(collectionToken).transferFrom(msg.sender, address(this), _initializeCollection.amount1);
+        CollectionToken(collectionToken).approve(address(uniswapV4Hook), _initializeCollection.amount1);
+
+        // call the hook to initialize the pool and initial provide liquidity
+        uniswapV4Hook.initializeCollection(
+            _initializeCollection.collection,
+            _initializeCollection.sqrtPriceX96,
+            _initializeCollection.amount0,
+            _initializeCollection.amount1
+        );
+
+        emit CollectionInitialized(
+            _initializeCollection.collection,
+            _initializeCollection.sqrtPriceX96,
+            _initializeCollection.amount0,
+            _initializeCollection.amount1
+        );
+    }
+
+    function initializeCollectionETH(InitializeCollection calldata _initializeCollection)
+        external
+        payable
+        override
+        nonReentrant
+        collectionExists(_initializeCollection.collection)
+    {
+        require(msg.value == _initializeCollection.amount0);
     }
 
     /**

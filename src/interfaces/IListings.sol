@@ -17,6 +17,13 @@ interface IListings {
         Listing listing;
     }
 
+    struct InitializeCollection {
+        address collection;
+        uint160 sqrtPriceX96;
+        uint256 amount0;
+        uint256 amount1;
+    }
+
     struct CreateListing {
         address collection;
         uint256 tokenId;
@@ -49,6 +56,10 @@ interface IListings {
     error TaxOverflow();
 
     function createCollection(CreateCollection calldata _createCollection) external;
+
+    function initializeCollectionETH(InitializeCollection calldata _initializeCollection) external payable;
+
+    function initializeCollection(InitializeCollection calldata _initializeCollection) external;
 
     function createListing(CreateListing calldata _createListing) external;
 
