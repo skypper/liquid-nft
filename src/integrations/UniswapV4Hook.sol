@@ -244,4 +244,8 @@ contract UniswapV4Hook is BaseHook {
             afterRemoveLiquidityReturnDelta: false
         });
     }
+
+    function getPoolKey(address collection) external view returns (PoolKey memory) {
+        return poolKeys[collection];
+    }
 }
