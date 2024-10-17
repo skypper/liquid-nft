@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import {Test, console} from "forge-std/Test.sol";
 import {PoolManager} from "@uniswap/v4-core/src/PoolManager.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {StateView} from "v4-periphery/src/lens/StateView.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {HookMiner} from "v4-template/test/utils/HookMiner.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -20,8 +21,10 @@ contract LiquidNFTTest is Test {
 
     UniswapV4Hook uniswapV4Hook;
 
-    ERC20Mock nativeToken;
     PoolManager poolManager;
+    StateView stateView;
+
+    ERC20Mock nativeToken;
 
     ERC721Mock nft1;
     ERC721Mock nft2;
@@ -32,6 +35,8 @@ contract LiquidNFTTest is Test {
         listings = new Listings();
 
         poolManager = new PoolManager();
+        stateView = new StateView(poolManager);
+
         nativeToken = new ERC20Mock();
 
         address deployer = makeAddr("deployer");
