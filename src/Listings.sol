@@ -163,29 +163,19 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
         // transfer the native tokens to the contract
         IERC20 nativeToken = uniswapV4Hook.nativeToken();
         nativeToken.transferFrom(msg.sender, address(this), _initializeCollection.amount0);
-        nativeToken.approve(address(uniswapV4Hook), _initializeCollection.amount0);
 
-        // transfer the collection token to the contract
-        address collectionToken = collectionTokens[_initializeCollection.collection];
-        CollectionToken(collectionToken).transferFrom(msg.sender, address(this), _initializeCollection.amount1);
-        CollectionToken(collectionToken).approve(address(uniswapV4Hook), _initializeCollection.amount1);
-
-        // call the hook to initialize the pool and initial provide liquidity
-        uniswapV4Hook.initializeCollection(
-            _initializeCollection.collection,
-            _initializeCollection.sqrtPriceX96,
-            _initializeCollection.amount0,
-            _initializeCollection.amount1
-        );
-
-        emit CollectionInitialized(
-            _initializeCollection.collection,
-            _initializeCollection.sqrtPriceX96,
-            _initializeCollection.amount0,
-            _initializeCollection.amount1
-        );
+        _initializeCollectionInternal(_initializeCollection);
     }
 
+    /**
+     * Initializes a collection by creating a liquidity pool on Uniswap V4 and
+     * providing initial liquidity of a with the given amount of native tokens (i.e. amount0) and
+     * collection tokens (i.e. amount1).
+     *
+     * @notice Accepts native coin and wraps it to the token (i.e. WETH) before providing liquidity
+     *
+     * @param _initializeCollection The parameters for the collection initialization
+     */
     function initializeCollectionETH(InitializeCollection calldata _initializeCollection)
         external
         payable
@@ -197,6 +187,13 @@ contract Listings is IListings, ReentrancyGuard, IERC721Receiver, Ownable, Token
 
         // Wrap the native coin (i.e. ether) to the token (i.e. WETH)
         WETH(payable(address(uniswapV4Hook.nativeToken()))).deposit{value: msg.value}();
+
+        _initializeCollectionInternal(_initializeCollection);
+    }
+
+    function _initializeCollectionInternal(InitializeCollection calldata _initializeCollection) internal {
+        IERC20 nativeToken = uniswapV4Hook.nativeToken();
+        nativeToken.approve(address(uniswapV4Hook), _initializeCollection.amount0);
 
         // transfer the collection token to the contract
         address collectionToken = collectionTokens[_initializeCollection.collection];
