@@ -47,4 +47,18 @@ contract UniswapV4HookTest is LiquidNFTTest {
         // test that liquidity has been minted
         assertTrue(stateView.getLiquidity(poolId) > 0);
     }
+
+    function testFail_initializeNotHook(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+
+        address user = makeAddr("user");
+
+        _createCollection(tokenId, tokenIdsCount, user);
+
+        PoolKey memory poolKey = uniswapV4Hook.getPoolKey(address(nft1));
+        PoolId poolId = poolKey.toId();
+
+        poolManager.initialize(poolKey, LiquidNFTTest.DUMMY_SQRT_PRICE, "");
+    }
 }

@@ -30,6 +30,7 @@ contract UniswapV4Hook is BaseHook {
 
     error CallerIsNotListings();
     error CollectionAlreadyInitialized();
+    error HookInvalidSender();
 
     IListings public listings;
     IERC20 public nativeToken;
@@ -162,12 +163,14 @@ contract UniswapV4Hook is BaseHook {
         poolFees[poolId].amount1 += amount1;
     }
 
-    function beforeInitialize(address, PoolKey calldata, uint160, bytes calldata)
+    function beforeInitialize(address sender, PoolKey calldata, uint160, bytes calldata)
         external
-        pure
+        view
         override
         returns (bytes4)
     {
+        // @dev pool must be initailized by the hook by calling `initializeCollection` function
+        require(sender == address(this), HookInvalidSender());
         return this.beforeInitialize.selector;
     }
 
