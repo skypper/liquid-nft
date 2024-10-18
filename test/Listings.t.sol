@@ -20,6 +20,32 @@ contract ListingsTest is LiquidNFTTest {
         }
     }
 
+    function test_initializeCollection(uint256 tokenId) public {
+        uint256 tokenIdsCount = 4;
+        vm.assume(tokenId != 0 && tokenId < type(uint256).max - tokenIdsCount);
+        _createCollection(tokenId, tokenIdsCount, address(this));
+
+        address collectionToken = listings.getCollectionToken(address(nft1));
+        deal(address(nativeToken), address(this), 1 ether);
+        deal(collectionToken, address(this), 1 ether);
+
+        nativeToken.approve(address(listings), 1 ether);
+        CollectionToken(collectionToken).approve(address(listings), 1 ether);
+
+        // Confirm that the expected event is fired
+        vm.expectEmit();
+        emit Listings.CollectionInitialized(address(nft1), 45765206694984738996961730 / 60 * 60, 1 ether, 1 ether);
+
+        listings.initializeCollection(
+            IListings.InitializeCollection({
+                collection: address(nft1),
+                sqrtPriceX96: 1 << 96 / 60 * 60,
+                amount0: 1 ether,
+                amount1: 1 ether
+            })
+        );
+    }
+
     function test_createCollectionNotEnoughNFTs(uint256 tokenId) public {
         vm.assume(tokenId != 0);
 
