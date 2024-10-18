@@ -17,6 +17,8 @@ import {ERC20Mock} from "../mocks/ERC20Mock.sol";
 import {ERC721Mock} from "../mocks/ERC721Mock.sol";
 
 contract LiquidNFTTest is Test {
+    uint160 constant DUMMY_SQRT_PRICE = 1 << 96 / 60 * 60;
+
     Listings listings;
 
     UniswapV4Hook uniswapV4Hook;

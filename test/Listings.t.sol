@@ -34,12 +34,12 @@ contract ListingsTest is LiquidNFTTest {
 
         // Confirm that the expected event is fired
         vm.expectEmit();
-        emit Listings.CollectionInitialized(address(nft1), 45765206694984738996961730 / 60 * 60, 1 ether, 1 ether);
+        emit Listings.CollectionInitialized(address(nft1), LiquidNFTTest.DUMMY_SQRT_PRICE, 1 ether, 1 ether);
 
         listings.initializeCollection(
             IListings.InitializeCollection({
                 collection: address(nft1),
-                sqrtPriceX96: 1 << 96 / 60 * 60,
+                sqrtPriceX96: LiquidNFTTest.DUMMY_SQRT_PRICE,
                 amount0: 1 ether,
                 amount1: 1 ether
             })

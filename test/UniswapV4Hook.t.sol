@@ -37,7 +37,7 @@ contract UniswapV4HookTest is LiquidNFTTest {
         nativeToken.approve(address(uniswapV4Hook), 1 ether);
         CollectionToken(collectionToken).approve(address(uniswapV4Hook), 1 ether);
 
-        uniswapV4Hook.initializeCollection(address(nft1), 45765206694984738996961730 / 60 * 60, 1 ether, 1 ether);
+        uniswapV4Hook.initializeCollection(address(nft1), LiquidNFTTest.DUMMY_SQRT_PRICE, 1 ether, 1 ether);
         vm.stopPrank();
 
         // test that pool has been initialized
