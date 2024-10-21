@@ -23,6 +23,16 @@ import {CollectionToken} from "../CollectionToken.sol";
 
 import {console} from "forge-std/Test.sol";
 
+/**
+ * This is a singleton hook contract that is attached to every pool within the Liquid NFT system
+ * and supported natively (i.e. pool creation, liquidity provision etc. performed as part of the protocol).
+ * Thus, the hook becomes the middleman that initializes a pool and adds liquidity to it on behalf of the user
+ * when a new collection is created.
+ * The hook also distributes a part of the accrued protocol fees to the liquidity providers.
+ *
+ * @dev This hook is used to initialize the pool and add liquidity to it when a new collection is created.
+ * @dev This hook is used to distribute the accrued fees to the pool owner.
+ */
 contract UniswapV4Hook is BaseHook {
     using PoolIdLibrary for PoolKey;
     using CurrencySettler for Currency;
