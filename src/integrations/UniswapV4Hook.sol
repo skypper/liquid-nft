@@ -162,7 +162,7 @@ contract UniswapV4Hook is BaseHook {
         return abi.encode(toBalanceDelta(1 ether, 1 ether));
     }
 
-    function depositFees(address collection, uint256 amount0, uint256 amount1) external onlyListings {
+    function depositFees(address collection, uint256 amount0, uint256 amount1) external {
         IERC20(nativeToken).transferFrom(msg.sender, address(this), amount0);
 
         address collectionToken = listings.getCollectionToken(collection);
