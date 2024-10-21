@@ -179,7 +179,7 @@ contract UniswapV4Hook is BaseHook {
         override
         returns (bytes4)
     {
-        // @dev pool must be initailized by the hook by calling `initializeCollection` function
+        // @dev pool must be initialized by the hook by calling `initializeCollection` function
         require(sender == address(this), HookInvalidSender());
         return this.beforeInitialize.selector;
     }
