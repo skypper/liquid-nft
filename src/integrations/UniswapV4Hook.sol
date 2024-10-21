@@ -53,6 +53,8 @@ contract UniswapV4Hook is BaseHook {
     // only pool owner can change the pool fee
     struct PoolInfo {
         PoolKey key;
+        // @notice `currency0` is always the native token and `currency1` is always the collection token inside the hook metadata,
+        // @notice which could differ from UniswapV4 pool order (i.e. iff `currency0` > `currency1`).
         bool currencyFlipped;
         bool initialized;
         uint256 poolFee;
